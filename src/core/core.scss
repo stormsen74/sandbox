@@ -1,0 +1,10 @@
+// All core scss base styles, helpers, mixins, fonts are bundled here together.
+// Just @import 'core/core.scss' in your component or page and you are ready to use all of them.
+@import "constants/color";
+@import "constants/easing";
+@import "constants/font";
+@import "constants/z-index";
+
+@import "mixins/clearfix";
+@import "mixins/position";
+@import "mixins/breakpoint";

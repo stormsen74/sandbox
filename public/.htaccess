@@ -1,0 +1,14 @@
+# Header set Access-Control-Allow-Origin "*"
+
+<FilesMatch "\.(js|css|png|jpg|json|eot|ttf|otf|woff)$">
+  Allow from all
+  Satisfy any
+</FilesMatch>
+
+RewriteEngine On
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -f [OR]
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^(test) /test/index.html [L]
+RewriteRule ^ /index.html [L]

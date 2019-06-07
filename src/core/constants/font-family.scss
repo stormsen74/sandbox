@@ -1,0 +1,17 @@
+@mixin font-face( $name, $file, $weight ) {
+  @font-face {
+    font-family: $name;
+    src: url('core/fonts/' + $file + '.ttf') format('truetype');
+
+    //src: url('core/fonts/' + $file + '.eot');
+    //src: url('core/fonts/' + $file + '.eot#iefix') format('embedded-opentype');
+    //src: url('core/fonts/' + $file + '.woff') format('woff');
+    
+    font-weight: $weight;
+    font-style: normal;
+  }
+}
+
+@include font-face('Roboto Mono', 'RobotoMono-Regular', 400);
+@include font-face('Roboto Mono', 'RobotoMono-Light', 300);
+@include font-face('Roboto Mono', 'RobotoMono-Bold', 700);

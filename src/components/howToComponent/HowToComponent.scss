@@ -1,0 +1,13 @@
+.how-to-component {
+  border: 2px solid black;
+  padding: 0 20px 30px;
+  color: green;
+
+  &--active {
+    color: red;
+  }
+
+  &__headline {
+    font-size: 30px;
+  }
+}

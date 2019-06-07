@@ -1,0 +1,18 @@
+@import "core/constants/font";
+@import "core/constants/color";
+
+body {
+  @include f-regular();
+  color: $black;
+  user-select: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  -webkit-font-smoothing: antialiased;
+}
+
+.pointer-events-none {
+  pointer-events: none;
+}
+
+a {
+  text-decoration: none;
+}

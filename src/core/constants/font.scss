@@ -1,0 +1,20 @@
+$font-base: "monospace";
+
+$f-regular: "Roboto Mono", $font-base;
+$f-light: "Roboto Mono", $font-base;
+$f-bold: "Roboto Mono", $font-base;
+
+@mixin f-regular() {
+  font-family: $f-regular;
+  font-weight: 400;
+}
+
+@mixin f-light() {
+  font-family: $f-light;
+  font-weight: 300;
+}
+
+@mixin f-bold() {
+  font-family: $f-bold;
+  font-weight: 700;
+}

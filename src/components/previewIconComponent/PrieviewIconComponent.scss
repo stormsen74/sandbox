@@ -1,0 +1,16 @@
+@import "core/core";
+
+.pop {
+  padding: 15px;
+  margin: 5px;
+  border: 1px solid #133971;
+  transition: all 0.5s $ease-out-strong;
+
+  a {
+    color: #133971;
+  }
+
+  &:hover {
+    background-color: azure;
+  }
+}

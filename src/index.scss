@@ -1,0 +1,11 @@
+@import "core/thirdparty/normalize";
+@import "core/base/base";
+@import "core/constants/font-family";
+@import "core/constants/typography";
+
+body {
+  &:after {
+    content: 'index';
+    display: none;
+  }
+}
