@@ -78,7 +78,7 @@ let rules = [
         options: {
           plugins: (loader) => [
             require('autoprefixer')({
-              browsers: ['> 1%', 'last 2 versions']
+              overrideBrowserslist: ['> 1%', 'last 2 versions']
             }),
             require('postcss-pxtorem')({
               propList: ['*'],

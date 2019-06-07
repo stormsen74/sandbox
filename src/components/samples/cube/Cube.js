@@ -19,6 +19,9 @@ class Cube extends React.Component {
 
   }
 
+
+  // https://discoverthreejs.com/tips-and-tricks/
+
   componentDidMount() {
     this.initThree();
     requestAnimationFrame(this.draw);
