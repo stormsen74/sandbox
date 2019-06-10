@@ -23,6 +23,7 @@
     "axios": "^0.19.0",
     "bootstrap": "^4.3.1",
     "date-and-time": "^0.7.0",
+    "dis-gui": "^2.1.0",
     "file-saver": "^2.0.2",
     "moment": "^2.24.0",
     "mousetrap": "^1.6.3",

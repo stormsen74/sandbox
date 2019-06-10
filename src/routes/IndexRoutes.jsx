@@ -5,6 +5,7 @@ import IndexPage from 'pages/IndexPage';
 import NotFoundPage from 'pages/NotFoundPage';
 import Cube from "../components/samples/cube/Cube";
 import TidesVisualizer from "../components/samples/tides-visualizer/TidesVisualizer";
+import Platonics from "../components/samples/platonics/Platonics";
 
 class IndexRoutes extends React.Component {
   constructor(props) {
@@ -20,6 +21,7 @@ class IndexRoutes extends React.Component {
           <Route exact path="/" component={IndexPage}/>
           <Route path="/cube" component={Cube}/>
           <Route path="/tides-visualizer" component={TidesVisualizer}/>
+          <Route path="/platonics" component={Platonics}/>
           <Route component={NotFoundPage}/>
         </Switch>
       </BrowserRouter>

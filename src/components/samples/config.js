@@ -9,4 +9,9 @@ export const samples = [
     description: 'Here some other description text ...',
     route: '/tides-visualizer'
   },
+  {
+    title: 'Platonics',
+    description: 'Here some other description text ...',
+    route: '/platonics'
+  },
 ];
