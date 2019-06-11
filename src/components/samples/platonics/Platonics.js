@@ -2,7 +2,7 @@ import React from 'react';
 import connect from "react-redux/es/connect/connect";
 import * as THREE from 'three';
 import OrbitControls from "../../../webgl/three/controls/OrbitControls";
-import types from "./PlatonicTypes";
+import {types, PLATONIC_TYPE} from "./PlatonicTypes";
 
 import CloseIcon from '../../../core/icons/close.inline.svg';
 import '../Scene.scss'
@@ -10,13 +10,20 @@ import '../Scene.scss'
 import 'react-dat-gui/build/react-dat-gui.css';
 
 import * as dg from 'dis-gui';
+import {Vector3} from "three";
 
 
 const DEVELOPMENT = process.env.NODE_ENV === 'development';
 const VR_BG_COLOR = 0x363636;
 
 
-const platonic_types = ['hexahedron', 'tetrahedron', 'octahedron', 'icosahedron', 'dodecahedron']
+const platonic_types = [
+  PLATONIC_TYPE.TETRAHEDRON,
+  PLATONIC_TYPE.OCTAHEDRON,
+  PLATONIC_TYPE.HEXAHEDRON,
+  PLATONIC_TYPE.ICOSAHEDRON,
+  PLATONIC_TYPE.DODECAHEDRON
+]
 
 class Platonics extends React.Component {
   constructor(props) {
@@ -33,7 +40,7 @@ class Platonics extends React.Component {
 
 
     this.platonic = {
-      type: 'hexahedron',
+      type: PLATONIC_TYPE.TETRAHEDRON,
       radius: 1,
       level: 0,
       mesh: null,
@@ -163,8 +170,8 @@ class Platonics extends React.Component {
     const faceCount = _geometry.attributes.position.count / 3;
     let materials = [];
     for (let i = 0; i < faceCount; i++) {
-      _geometry.addGroup(i * 3, 3, i); // first 3 vertices use material 0
-      materials.push(new THREE.MeshBasicMaterial({color: Math.random()*0xffffff}),)
+      // _geometry.addGroup(i * 3, 3, i); // => set for buffer geometry
+      materials.push(new THREE.MeshBasicMaterial({color: Math.random() * 0xffffff}))
     }
 
     return materials;
@@ -194,21 +201,54 @@ class Platonics extends React.Component {
     if (type != undefined) {
       console.log('initPlatonic', type, radius, subdivision);
 
-      let platonic_geometry = new THREE.PolyhedronBufferGeometry(type.vertices, type.indices, radius, subdivision);
+      // TODO ... validate!
+      // let platonic_buffer_geometry = new THREE.PolyhedronBufferGeometry(type.vertices, type.indices, radius, subdivision);
+
+      // 1. => g
+      let platonic_geometry = new THREE.PolyhedronGeometry(type.vertices, type.indices, radius, subdivision);
+      platonic_geometry.computeFaceNormals();
+      platonic_geometry.faces[1].materialIndex = 1;
+      console.log('geometry =>', platonic_geometry)
+      let materials = [];
+
+      for (let i = 0; i < platonic_geometry.faces.length; i++) {
+        materials.push(new THREE.MeshBasicMaterial({color: Math.random() * 0xffffff}))
+      }
+
+      // TODO ...
+      let faces = [] // remove already checked faces -> make groups // coloring
+      for (let o = 0; o < platonic_geometry.faces.length; o++) {
+        // console.log('face:', o, platonic_geometry.faces[o]);
+        let normal_outer = platonic_geometry.faces[o].normal.normalize();
+        console.log('o - face', o, normal_outer);
+        for (let i = 0; i < platonic_geometry.faces.length; i++) {
+          let normal_inner = platonic_geometry.faces[i].normal.normalize();
+          console.log('i - face', i, normal_inner);
+
+          let dot = normal_outer.dot(normal_inner);
+          if (dot === 1 && o !== i) console.log('===>')
+          // console.log('against ->: ', i, platonic_geometry.faces[i]);
+          // if (platonic_geometry.faces[o].normal.normalize().dot(platonic_geometry.faces[i].normal.normalize()) === 1) {
+          //   console.log(o, i, )
+          // }
+        }
+      }
 
 
-      // this.setVertexColors(platonic_geometry);
+      // 2. => b
+      let platonic_buffer_geometry = new THREE.BufferGeometry().fromGeometry(platonic_geometry);
+      // console.log('buffer =>', platonic_buffer_geometry)
+      // let materials = this.setMaterials(platonic_buffer_geometry);
 
 
       // let material = new THREE.MeshNormalMaterial();
-      let material = this.applyVertexMaterial(platonic_geometry);
-      let materials = this.setMaterials(platonic_geometry);
+      let material = this.applyVertexMaterial(platonic_buffer_geometry);
 
 
       // material.side = THREE.DoubleSide; //TODO check Tetrahedron Geometry - flipped normals?
-      this.platonic.mesh = new THREE.Mesh(platonic_geometry, material);
+      this.platonic.mesh = new THREE.Mesh(platonic_buffer_geometry, materials);
 
-      let edges = new THREE.EdgesGeometry(platonic_geometry);
+      let edges = new THREE.EdgesGeometry(platonic_buffer_geometry);
       this.platonic.edgeLines = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color: 0xffef68}));
 
       this.platonic.vertexNormals = new THREE.VertexNormalsHelper(this.platonic.mesh, .1, 0xff0000, 1);
@@ -220,6 +260,7 @@ class Platonics extends React.Component {
 
       this.platonic.vertexNormals.visible = this.ui.showNormals;
       this.platonic.mesh.visible = this.ui.showMesh;
+
 
     }
   }
