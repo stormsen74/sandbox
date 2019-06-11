@@ -188,7 +188,8 @@ class Platonics extends React.Component {
 
   initPlatonic(type, radius = 1, subdivision = 0) {
 
-    // TODO => vertex color | shading | ico
+    // TODO => vertex color | shading |
+    // TODO => vertice labels
 
     if (type != undefined) {
       console.log('initPlatonic', type, radius, subdivision);
