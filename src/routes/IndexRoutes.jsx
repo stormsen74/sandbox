@@ -6,6 +6,7 @@ import NotFoundPage from 'pages/NotFoundPage';
 import Cube from "../components/samples/cube/Cube";
 import TidesVisualizer from "../components/samples/tides-visualizer/TidesVisualizer";
 import Platonics from "../components/samples/platonics/Platonics";
+import IcoSphere from "../components/samples/platonics/IcoSphere";
 
 class IndexRoutes extends React.Component {
   constructor(props) {
@@ -22,6 +23,7 @@ class IndexRoutes extends React.Component {
           <Route path="/cube" component={Cube}/>
           <Route path="/tides-visualizer" component={TidesVisualizer}/>
           <Route path="/platonics" component={Platonics}/>
+          <Route path="/icosphere" component={IcoSphere}/>
           <Route component={NotFoundPage}/>
         </Switch>
       </BrowserRouter>

@@ -142,20 +142,20 @@ class Platonics extends React.Component {
     for (let i = 0; i < count; i++) {
       // color.setHSL((positions.getY(i) / radius + 1) / 2, 1.0, 0.5);
       let vPos = new THREE.Vector3(positions.getX(i), positions.getY(i), positions.getZ(i));
-      let vCount_1 = 0;
-      let vCount_2 = 5;
-      let vType_1 = new THREE.Vector3(
-        types.octahedron.vertices[vCount_1 * 3],
-        types.octahedron.vertices[vCount_1 * 3 + 1],
-        types.octahedron.vertices[vCount_1 * 3 + 2]
+      let index_0 = 0;
+      let index_1 = 5;
+      let vert_1 = new THREE.Vector3(
+        types.octahedron.vertices[index_0 * 3],
+        types.octahedron.vertices[index_0 * 3 + 1],
+        types.octahedron.vertices[index_0 * 3 + 2]
       );
-      let vType_2 = new THREE.Vector3(
-        types.octahedron.vertices[vCount_2 * 3],
-        types.octahedron.vertices[vCount_2 * 3 + 1],
-        types.octahedron.vertices[vCount_2 * 3 + 2]
+      let vert_2 = new THREE.Vector3(
+        types.octahedron.vertices[index_1 * 3],
+        types.octahedron.vertices[index_1 * 3 + 1],
+        types.octahedron.vertices[index_1 * 3 + 2]
       );
-      if (vPos.equals(vType_1) || vPos.equals(vType_2)) {
-        console.log('match')
+      if (vPos.equals(vert_1) || vPos.equals(vert_2)) {
+        console.log('set vertex color: ', vPos)
         color.setRGB(0, 1, 0);
       } else {
         color.setRGB(.3, .3, .3);
@@ -207,12 +207,15 @@ class Platonics extends React.Component {
       // 1. => g
       let platonic_geometry = new THREE.PolyhedronGeometry(type.vertices, type.indices, radius, subdivision);
       platonic_geometry.computeFaceNormals();
-      platonic_geometry.faces[1].materialIndex = 1;
-      console.log('geometry =>', platonic_geometry)
-      let materials = [];
 
+      let materials = [];
+      let color = new THREE.Color();
+      const range = 1 / platonic_geometry.faces.length;
       for (let i = 0; i < platonic_geometry.faces.length; i++) {
-        materials.push(new THREE.MeshBasicMaterial({color: Math.random() * 0xffffff}))
+        color.setHSL(i * range, .5, .4);
+        // materials.push(new THREE.MeshBasicMaterial({color: Math.random() * 0xffffff}))
+        materials.push(new THREE.MeshBasicMaterial({color: color}))
+        platonic_geometry.faces[i].materialIndex = i;
       }
 
       // TODO ...
@@ -220,13 +223,15 @@ class Platonics extends React.Component {
       for (let o = 0; o < platonic_geometry.faces.length; o++) {
         // console.log('face:', o, platonic_geometry.faces[o]);
         let normal_outer = platonic_geometry.faces[o].normal.normalize();
-        console.log('o - face', o, normal_outer);
+        // console.log('o - face', o, normal_outer);
         for (let i = 0; i < platonic_geometry.faces.length; i++) {
           let normal_inner = platonic_geometry.faces[i].normal.normalize();
-          console.log('i - face', i, normal_inner);
+          // console.log('i - face', i, normal_inner);
 
           let dot = normal_outer.dot(normal_inner);
-          if (dot === 1 && o !== i) console.log('===>')
+          if (dot === 1 && o !== i) {
+            // console.log('===>')
+          }
           // console.log('against ->: ', i, platonic_geometry.faces[i]);
           // if (platonic_geometry.faces[o].normal.normalize().dot(platonic_geometry.faces[i].normal.normalize()) === 1) {
           //   console.log(o, i, )

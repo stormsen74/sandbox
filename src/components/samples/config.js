@@ -14,4 +14,10 @@ export const samples = [
     description: 'Here some other description text ...',
     route: '/platonics'
   },
+  {
+    title: 'IcoSphere',
+    description: 'Here some other description text ...',
+    route: '/icosphere'
+  },
+
 ];
