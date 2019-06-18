@@ -11,6 +11,7 @@ import 'react-dat-gui/build/react-dat-gui.css';
 
 import * as dg from 'dis-gui';
 import {Vector3} from "three";
+import {BufferGeometry} from "three";
 
 
 const DEVELOPMENT = process.env.NODE_ENV === 'development';
@@ -36,7 +37,7 @@ class IcoSphere extends React.Component {
       level: 0,
       mesh: null,
       edges: [],
-      edgeLines: null,
+      edgeLines: [],
       vertexNormals: null
     };
 
@@ -88,6 +89,55 @@ class IcoSphere extends React.Component {
 
   }
 
+
+  disposeLayer(layer) {
+    console.log('disposeLayer', layer)
+
+    // layer.children.forEach((child) => {
+    //   child.geometry.dispose();
+    //   child.material.dispose();
+    //   layer.remove(child);
+    //   console.log(child.geometry)
+    // })
+
+    layer.traverse(object => {
+      console.log(object)
+      object.material.dispose();
+      BufferGeometry.dispose()
+
+      // console.log('dispose geometry!')
+    })
+
+    // console.log(layer)
+    // layer.traverse(object => {
+    //   if (!object.isMesh) return
+    //
+    //   console.log('dispose geometry!')
+    //   object.geometry.dispose();
+    //
+    //   if (object.material.isMaterial) {
+    //     cleanMaterial(object.material)
+    //   } else {
+    //     // an array of materials
+    //     for (const material of object.material) cleanMaterial(material)
+    //   }
+    // });
+    //
+    // const cleanMaterial = material => {
+    //   console.log('dispose material!')
+    //   material.dispose();
+    //
+    //   // dispose textures
+    //   for (const key of Object.keys(material)) {
+    //     const value = material[key]
+    //     if (value && typeof value === 'object' && 'minFilter' in value) {
+    //       console.log('dispose texture!')
+    //       value.dispose()
+    //     }
+    //   }
+    // }
+  }
+
   updateGeometry() {
 
     if (this.icoSphere.mesh != null) {
@@ -105,9 +155,8 @@ class IcoSphere extends React.Component {
     }
 
     // TODO clear edge materials?
-    if (this.icoSphere.edgeLines != null) {
-      this.scene.remove(this.icoSphere.edgeLines);
-      this.icoSphere.edgeLines = null;
+    if (this.icoSphere.edgeLines.length > 0) {
+      this.clearEdgeLines();
     }
 
     if (this.icoSphere.vertexNormals != null) {
@@ -119,20 +168,40 @@ class IcoSphere extends React.Component {
 
   }
 
-  addEdgeLines(group) {
+
+  clearEdgeLines() {
+    for (let i = 0; i < this.icoSphere.edgeLines.length; i++) {
+      this.icoSphere.edgeLines[i].material.dispose();
+      this.icoSphere.edgeLines[i].geometry.dispose();
+      this.icoSphere.layerEdgeLines.remove(this.icoSphere.edgeLines[i]);
+    }
+    this.icoSphere.edgeLines = [];
+  }
+
+  addEdgeLines() {
+
+  }
+
+  createEdgeLines() {
 
     let edges = this.icoSphere.edges;
 
-    const maxL = Math.max(...this.icoSphere.edges.map(o => o.length), 0);
+    // TODO ...
+    // const maxL =
+    //   console.log(...this.icoSphere.edges.map(o => o.length));
+    // https://stackoverflow.com/questions/51088882/how-to-remove-objects-with-the-same-key-and-value-pair-in-arrays
 
 
-    let material;
+    // console.log(_len)
+
+
+    // let material;
     for (let i = 0; i < edges.length; i++) {
       let edge = edges[i];
 
-      material = new THREE.LineBasicMaterial({color: 0xff0000});
-      if (edge.length > .5) {
-        material = new THREE.LineBasicMaterial({color: 0x00ff00});
+      const material = new THREE.LineBasicMaterial({color: 0xff0000});
+      if (edge.length > .6) {
+        material.color.set(0x00ff00);
       }
 
       const geometry = new THREE.Geometry();
@@ -142,7 +211,7 @@ class IcoSphere extends React.Component {
       );
 
       const line = new THREE.Line(geometry, material);
-      group.add(line);
+      this.icoSphere.edgeLines.push(line);
     }
   }
 
@@ -248,9 +317,11 @@ class IcoSphere extends React.Component {
       }
 
       // edgeLines geometry
-      this.icoSphere.edgeLines = new THREE.Group();
-      this.addEdgeLines(this.icoSphere.edgeLines);
-
+      this.icoSphere.layerEdgeLines = new THREE.Object3D();
+      this.createEdgeLines();
+      for (let i = 0; i < this.icoSphere.edgeLines.length; i++) {
+        this.icoSphere.layerEdgeLines.add(this.icoSphere.edgeLines[i]);
+      }
 
       // 2. => to buffer
       let platonic_buffer_geometry = new THREE.BufferGeometry().fromGeometry(platonic_geometry);
@@ -261,7 +332,7 @@ class IcoSphere extends React.Component {
 
 
       this.scene.add(this.icoSphere.mesh);
-      this.scene.add(this.icoSphere.edgeLines);
+      this.scene.add(this.icoSphere.layerEdgeLines);
       this.scene.add(this.icoSphere.vertexNormals);
 
       this.icoSphere.vertexNormals.visible = this.ui.showNormals;
