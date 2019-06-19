@@ -1,8 +1,9 @@
 import React from 'react';
 import connect from "react-redux/es/connect/connect";
 import * as THREE from 'three';
+import {BufferGeometry} from 'three';
 import OrbitControls from "../../../webgl/three/controls/OrbitControls";
-import {types, PLATONIC_TYPE} from "./PlatonicTypes";
+import {PLATONIC_TYPE, types} from "./PlatonicTypes";
 
 import CloseIcon from '../../../core/icons/close.inline.svg';
 import '../Scene.scss'
@@ -10,8 +11,6 @@ import '../Scene.scss'
 import 'react-dat-gui/build/react-dat-gui.css';
 
 import * as dg from 'dis-gui';
-import {Vector3} from "three";
-import {BufferGeometry} from "three";
 
 
 const DEVELOPMENT = process.env.NODE_ENV === 'development';
@@ -154,7 +153,6 @@ class IcoSphere extends React.Component {
       this.icoSphere.mesh = null;
     }
 
-    // TODO clear edge materials?
     if (this.icoSphere.edgeLines.length > 0) {
       this.clearEdgeLines();
     }
@@ -186,13 +184,15 @@ class IcoSphere extends React.Component {
 
     let edges = this.icoSphere.edges;
 
-    // TODO ...
-    // const maxL =
-    //   console.log(...this.icoSphere.edges.map(o => o.length));
+    // TODO ... not precise > level 1
     // https://stackoverflow.com/questions/51088882/how-to-remove-objects-with-the-same-key-and-value-pair-in-arrays
-
-
-    // console.log(_len)
+    let _edgeLengths = []
+    for (let i = 0; i < edges.length; i++) {
+      const edgeLength = parseFloat(edges[i].length.toFixed(5));
+      _edgeLengths.push(edgeLength);
+    }
+    let edgeLengths = [...new Set(_edgeLengths)];
+    console.log('>', edgeLengths)
 
 
     // let material;
@@ -223,7 +223,7 @@ class IcoSphere extends React.Component {
   }
 
 
-  initIcoSphere(type, radius = 1, subdivision = 0) {
+  initIcoSphere(type, radius = 100, subdivision = 0) {
 
     // TODO => vertex color | shading |
     // TODO => vertice labels
