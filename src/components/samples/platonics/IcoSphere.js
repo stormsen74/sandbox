@@ -2,6 +2,7 @@ import React from 'react';
 import connect from "react-redux/es/connect/connect";
 import * as THREE from 'three';
 import {BufferGeometry} from 'three';
+import {PolyhedronGeometry} from '../../../webgl/three/geometries/PolyhedronGeometry'
 import OrbitControls from "../../../webgl/three/controls/OrbitControls";
 import {PLATONIC_TYPE, types} from "./PlatonicTypes";
 
@@ -28,11 +29,13 @@ class IcoSphere extends React.Component {
     this.viewNormals = this.viewNormals.bind(this);
     this.showGrid = this.showGrid.bind(this);
     this.addEdgeLines = this.addEdgeLines.bind(this);
+    this.toggleProjection = this.toggleProjection.bind(this);
 
 
     this.icoSphere = {
       type: PLATONIC_TYPE.ICOSAHEDRON,
       radius: 1,
+      projectVert: true,
       level: 0,
       mesh: null,
       edges: [],
@@ -41,6 +44,7 @@ class IcoSphere extends React.Component {
     };
 
     this.ui = {
+      projectToSphere: false,
       showMesh: true,
       showNormals: false,
       showGrid: false
@@ -52,7 +56,7 @@ class IcoSphere extends React.Component {
   componentDidMount() {
 
     this.initThree();
-    this.initIcoSphere(types[PLATONIC_TYPE.ICOSAHEDRON], this.icoSphere.radius, this.icoSphere.level);
+    this.initIcoSphere(types[PLATONIC_TYPE.ICOSAHEDRON], this.icoSphere.radius, this.icoSphere.level, this.icoSphere.projectVert);
 
     window.addEventListener('resize', this.onResize, true);
     this.onResize();
@@ -162,7 +166,7 @@ class IcoSphere extends React.Component {
       this.icoSphere.vertexNormals = null;
     }
 
-    this.initIcoSphere(types[PLATONIC_TYPE.ICOSAHEDRON], this.icoSphere.radius, this.icoSphere.level);
+    this.initIcoSphere(types[PLATONIC_TYPE.ICOSAHEDRON], this.icoSphere.radius, this.icoSphere.level, this.icoSphere.projectVert);
 
   }
 
@@ -223,16 +227,17 @@ class IcoSphere extends React.Component {
   }
 
 
-  initIcoSphere(type, radius = 100, subdivision = 0) {
+  initIcoSphere(type, radius = 1, subdivision = 0, projectToSphere = false) {
 
     // TODO => vertex color | shading |
     // TODO => vertice labels
 
-    if (type != undefined) {
-      console.log('initIcoSphere', type, radius, subdivision);
+    if (type !== undefined) {
+      console.log('initIcoSphere', type, radius, subdivision, projectToSphere);
+      if (projectToSphere) radius = radius * 2.0;
 
       // 1. => geometry
-      let platonic_geometry = new THREE.PolyhedronGeometry(type.vertices, type.indices, radius, subdivision);
+      let platonic_geometry = new PolyhedronGeometry(type.vertices, type.indices, radius, subdivision, projectToSphere);
       platonic_geometry.computeFaceNormals();
 
       let mat = new THREE.MeshBasicMaterial({
@@ -354,8 +359,8 @@ class IcoSphere extends React.Component {
     this.controls.enableDamping = true;
     this.controls.enablePan = false;
     this.controls.dampingFactor = 0.15;
-    this.controls.minDistance = 2.5;
-    this.controls.maxDistance = 5;
+    this.controls.minDistance = 5;
+    this.controls.maxDistance = 10;
     // this.controls.maxPolarAngle = Math.PI / 2;
   }
 
@@ -374,6 +379,13 @@ class IcoSphere extends React.Component {
   onChangeLevel(level) {
     if (level !== this.icoSphere.level) {
       this.icoSphere.level = level;
+      this.updateGeometry();
+    }
+  }
+
+  toggleProjection(value) {
+    if (value !== this.icoSphere.projectVert) {
+      this.icoSphere.projectVert = value;
       this.updateGeometry();
     }
   }
@@ -408,6 +420,7 @@ class IcoSphere extends React.Component {
         </div>
         <dg.GUI>
           <dg.Number label='Level' value={this.icoSphere.level} min={0} max={4} step={1} onChange={this.onChangeLevel}/>
+          <dg.Checkbox label='projectVert' checked={this.icoSphere.projectVert} onFinishChange={this.toggleProjection}/>
           <dg.Checkbox label='showMesh' checked={this.ui.showMesh} onFinishChange={this.viewMesh}/>
           <dg.Checkbox label='showNormals' checked={this.ui.showNormals} onFinishChange={this.viewNormals}/>
           <dg.Checkbox label='showGrid' checked={this.ui.showGrid} onFinishChange={this.showGrid}/>
