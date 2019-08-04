@@ -10,7 +10,7 @@ import {Geometry, BufferGeometry, Float32BufferAttribute, Vector3, Vector2} from
 
 // PolyhedronGeometry
 
-function PolyhedronGeometry(vertices, indices, radius, detail, projectToSphere) {
+function PolyhedronGeometry(vertices, indices, radius, detail) {
 
   Geometry.call(this);
 
@@ -23,7 +23,7 @@ function PolyhedronGeometry(vertices, indices, radius, detail, projectToSphere) 
     detail: detail,
   };
 
-  this.fromBufferGeometry(new PolyhedronBufferGeometry(vertices, indices, radius, detail, projectToSphere));
+  this.fromBufferGeometry(new PolyhedronBufferGeometry(vertices, indices, radius, detail));
   this.mergeVertices();
 
 }
@@ -33,7 +33,7 @@ PolyhedronGeometry.prototype.constructor = PolyhedronGeometry;
 
 // PolyhedronBufferGeometry
 
-function PolyhedronBufferGeometry(vertices, indices, radius, detail, projectToSphere) {
+function PolyhedronBufferGeometry(vertices, indices, radius, detail) {
 
   BufferGeometry.call(this);
 
@@ -44,11 +44,10 @@ function PolyhedronBufferGeometry(vertices, indices, radius, detail, projectToSp
     indices: indices,
     radius: radius,
     detail: detail,
-    projectToSphere: projectToSphere
   };
 
   radius = radius || 1;
-  detail = detail || 0;
+  detail = detail || 1;
 
   // default buffer data
 
@@ -61,7 +60,7 @@ function PolyhedronBufferGeometry(vertices, indices, radius, detail, projectToSp
 
   // all vertices should lie on a conceptual sphere with a given radius
 
-  appplyRadius(radius, this.parameters.projectToSphere);
+  // appplyRadius(radius);
 
   // finally, create the uv data
 
@@ -111,7 +110,8 @@ function PolyhedronBufferGeometry(vertices, indices, radius, detail, projectToSp
 
   function subdivideFace(a, b, c, detail) {
 
-    var cols = Math.pow(2, detail);
+    // var cols = Math.pow(2, detail);
+    var cols = detail > 0 ? detail : 1;
 
     // we use this multidimensional array as a data structure for creating the subdivision
 
@@ -174,7 +174,7 @@ function PolyhedronBufferGeometry(vertices, indices, radius, detail, projectToSp
 
   }
 
-  function appplyRadius(radius, project) {
+  function appplyRadius(radius) {
 
     var vertex = new Vector3();
 
@@ -186,7 +186,7 @@ function PolyhedronBufferGeometry(vertices, indices, radius, detail, projectToSp
       vertex.y = vertexBuffer[i + 1];
       vertex.z = vertexBuffer[i + 2];
 
-      if (project) vertex.normalize().multiplyScalar(radius);
+      vertex.normalize().multiplyScalar(radius);
 
       vertexBuffer[i + 0] = vertex.x;
       vertexBuffer[i + 1] = vertex.y;
