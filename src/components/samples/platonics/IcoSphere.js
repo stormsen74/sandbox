@@ -1,5 +1,6 @@
 import React from 'react';
 import * as THREE from 'three';
+import {Vector2, Vector3} from 'three';
 import {PolyhedronGeometry} from '../../../webgl/three/geometries/PolyhedronGeometry'
 import OrbitControls from "../../../webgl/three/controls/OrbitControls";
 import {PLATONIC_TYPE, types} from "./PlatonicTypes";
@@ -31,13 +32,13 @@ class IcoSphere extends React.Component {
     this.showGrid = this.showGrid.bind(this);
     this.showAxis = this.showAxis.bind(this);
     this.toggleProjection = this.toggleProjection.bind(this);
+    this.toggleOffsetVertices = this.toggleOffsetVertices.bind(this);
 
 
     this.icoSphere = {
       type: PLATONIC_TYPE.ICOSAHEDRON,
       radius: 1,
-      projectVert: true,
-      level: 1,
+      level: 2,
       mesh: null,
       edges: [],
       edgeLines: [],
@@ -46,13 +47,15 @@ class IcoSphere extends React.Component {
 
     this.ui = {
       projectToSphere: false,
+      projectVert: true,
       slice: 0,
       sliceValue: -this.icoSphere.radius,
-      showMesh: true,
+      offsetVertices: false,
+      showMesh: false,
       showLines: true,
       showNormals: false,
-      showGrid: true,
-      showAxis: true
+      showGrid: false,
+      showAxis: false
     }
 
   }
@@ -61,7 +64,7 @@ class IcoSphere extends React.Component {
   componentDidMount() {
 
     this.initThree();
-    this.initIcoSphere(types[PLATONIC_TYPE.ICOSAHEDRON], this.icoSphere.radius, this.icoSphere.level, this.icoSphere.projectVert);
+    this.initIcoSphere(types[PLATONIC_TYPE.ICOSAHEDRON], this.icoSphere.radius, this.icoSphere.level, this.ui.projectVert);
 
     window.addEventListener('resize', this.onResize, true);
     this.onResize();
@@ -124,20 +127,62 @@ class IcoSphere extends React.Component {
       this.icoSphere.vertexNormals = null;
     }
 
-    this.initIcoSphere(types[PLATONIC_TYPE.ICOSAHEDRON], this.icoSphere.radius, this.icoSphere.level, this.icoSphere.projectVert);
+    this.initIcoSphere(types[PLATONIC_TYPE.ICOSAHEDRON], this.icoSphere.radius, this.icoSphere.level, this.ui.projectVert);
 
+  }
+
+  createEdges(vertices, faces) {
+    let edges = [];
+    let indices = [];
+    for (let i = 0; i < faces.length; i++) {
+      let face = faces[i];
+
+      let ab = [face.a, face.b];
+      let bc = [face.b, face.c];
+      let ca = [face.c, face.a];
+
+      const length_ab = vertices[ab[0]].distanceTo(vertices[ab[1]]);
+      const length_bc = vertices[bc[0]].distanceTo(vertices[bc[1]]);
+      const length_ca = vertices[ca[0]].distanceTo(vertices[ca[1]]);
+
+
+      let compareNumbers = (a, b) => {
+        return a - b;
+      };
+
+      ab.sort(compareNumbers);
+      bc.sort(compareNumbers);
+      ca.sort(compareNumbers);
+
+      let del_ab = vertices[ab[0]]._delete || vertices[ab[1]]._delete;
+      let del_bc = vertices[bc[0]]._delete || vertices[bc[1]]._delete;
+      let del_ca = vertices[ca[0]]._delete || vertices[ca[1]]._delete;
+
+      let edge_ab = {start: vertices[ab[0]], end: vertices[ab[1]], length: length_ab, _indices: ab.toString(), _delete: del_ab};
+      let edge_bc = {start: vertices[bc[0]], end: vertices[bc[1]], length: length_bc, _indices: bc.toString(), _delete: del_bc};
+      let edge_ca = {start: vertices[ca[0]], end: vertices[ca[1]], length: length_ca, _indices: ca.toString(), _delete: del_ca};
+
+      edges.push(edge_ab, edge_bc, edge_ca);
+      indices.push(ab.toString(), bc.toString(), ca.toString())
+    }
+
+    // remove duplicate edges
+    const removeDuplicates = [...new Set(indices)];
+    this.icoSphere.edges = [];
+    for (let i = 0; i < removeDuplicates.length; i++) {
+      let edge = this.getByValue(edges, removeDuplicates[i]);
+      this.icoSphere.edges.push(edge);
+    }
   }
 
 
   clearEdgeLines() {
     for (let i = 0; i < this.icoSphere.edgeLines.length; i++) {
       this.icoSphere.edgeLines[i].material.dispose();
-      this.icoSphere.edgeLines[i].geometry.dispose();
       this.icoSphere.layerEdgeLines.remove(this.icoSphere.edgeLines[i]);
     }
     this.icoSphere.edgeLines = [];
   }
-
 
   createEdgeLines() {
 
@@ -159,13 +204,16 @@ class IcoSphere extends React.Component {
     edgeLengths.sort(compareNumbers);
     console.log('create-edge-lines >', edgeLengths);
 
-    let edgeColors = [
-      new THREE.Color('#ef090d'),
-      new THREE.Color('#116018'),
-      new THREE.Color('#1f1ff2'),
+    const edgeColors = [
+      new THREE.Color('#f1090d'),
+      new THREE.Color('#5798c2'),
+      new THREE.Color('#ff8a27'),
       new THREE.Color('#02c2bf'),
       new THREE.Color('#ff07f8'),
       new THREE.Color('#e7e405'),
+      new THREE.Color('#5ce759'),
+      new THREE.Color('#3838cf'),
+      new THREE.Color('#4ad1e7'),
     ];
 
     for (let i = 0; i < edges.length; i++) {
@@ -178,16 +226,31 @@ class IcoSphere extends React.Component {
         }
       });
 
-      const geometry = new THREE.Geometry();
-      geometry.vertices.push(edge.start, edge.end);
-      const line = new THREE.Line(geometry, material);
-
-      this.icoSphere.edgeLines.push(line);
-      this.icoSphere.layerEdgeLines.add(line);
+      const edgeGeometry = new THREE.Geometry();
+      if (!edge._delete) {
+        edgeGeometry.vertices.push(edge.start, edge.end);
+        const edgeLine = new THREE.Line(edgeGeometry, material);
+        this.icoSphere.edgeLines.push(edgeLine);
+        this.icoSphere.layerEdgeLines.add(edgeLine);
+      }
     }
+
 
   }
 
+  offsetVerticesForPrint(vertices) {
+    for (let v = 0; v < vertices.length; v++) {
+      let vert = vertices[v];
+      // => offset = f(y)
+      // vert.y = 0;
+
+      const vxz = new Vector2(vert.x, vert.z);
+      // const offset = mathUtils.convertToRange(vert.y, [-this.icoSphere.radius, this.icoSphere.radius], [0, 1]);
+      const offset = this.icoSphere.radius - Math.abs(vert.y)
+      vxz.multiplyScalar(offset);
+      vert.add(new Vector3(vxz.x, 0, vxz.y))
+    }
+  }
 
   getByValue(arr, value) {
     for (let i = 0, iLen = arr.length; i < iLen; i++) {
@@ -215,7 +278,8 @@ class IcoSphere extends React.Component {
   initIcoSphere(type, radius = 1, subdivision = 0, projectToSphere = false) {
 
     // TODO => vertice labels
-    // TODO => rotate / symmetry - remove verts || faces
+    // TODO => add lighting/shadow-plane
+    // TODO => layout/print statistics
 
     if (type !== undefined) {
       // console.log('initIcoSphere', type, radius, subdivision, projectToSphere);
@@ -249,11 +313,9 @@ class IcoSphere extends React.Component {
         let matIndex = 1;
 
         vertices.forEach(vertice => {
-
           if (vertice._delete === true) {
             if (face.a === vertice._index || face.b === vertice._index || face.c === vertice._index) face._delete = true;
           }
-
           if (vertice._neighbours === 5 && vertice._delete === false) {
             if (face.a === vertice._index || face.b === vertice._index || face.c === vertice._index) {
               matIndex = 2;
@@ -264,53 +326,16 @@ class IcoSphere extends React.Component {
         face.materialIndex = matIndex;
       }
 
-
-      // edges
-      let edges = [];
-      let indices = [];
-      for (let i = 0; i < faces.length; i++) {
-        let face = faces[i];
-
-        let ab = [face.a, face.b];
-        let bc = [face.b, face.c];
-        let ca = [face.c, face.a];
-
-        const length_ab = vertices[ab[0]].distanceTo(vertices[ab[1]]);
-        const length_bc = vertices[bc[0]].distanceTo(vertices[bc[1]]);
-        const length_ca = vertices[ca[0]].distanceTo(vertices[ca[1]]);
-
-        let compareNumbers = (a, b) => {
-          return a - b;
-        };
-
-        ab.sort(compareNumbers);
-        bc.sort(compareNumbers);
-        ca.sort(compareNumbers);
-
-        let edge_ab = {start: vertices[ab[0]], end: vertices[ab[1]], length: length_ab, _indices: ab.toString()};
-        let edge_bc = {start: vertices[bc[0]], end: vertices[bc[1]], length: length_bc, _indices: bc.toString()};
-        let edge_ca = {start: vertices[ca[0]], end: vertices[ca[1]], length: length_ca, _indices: ca.toString()};
-
-        edges.push(edge_ab, edge_bc, edge_ca);
-        indices.push(ab.toString(), bc.toString(), ca.toString())
-      }
-
-      // remove duplicate edges
-      let removeDuplicates = [...new Set(indices)];
-      this.icoSphere.edges = [];
-      for (let i = 0; i < removeDuplicates.length; i++) {
-        let edge = this.getByValue(edges, removeDuplicates[i]);
-        this.icoSphere.edges.push(edge);
-      }
-
-
+      this.createEdges(vertices, faces);
       this.createEdgeLines();
+      if (this.ui.offsetVertices) this.offsetVerticesForPrint(vertices);
 
 
       // console.log(vertices);
       // console.log(faces);
 
       // TODO => generate new Geometry
+
       let _vertices = [];
       let _faces = [];
       for (let i = 0; i < faces.length; i++) {
@@ -320,8 +345,8 @@ class IcoSphere extends React.Component {
         } else {
           _faces.push(face);
         }
-
       }
+
       for (let i = 0; i < vertices.length; i++) {
         const vert = vertices[i];
         if (!vert._delete) _vertices.push(vert)
@@ -334,9 +359,10 @@ class IcoSphere extends React.Component {
       // 2. => to buffer
       const platonic_buffer_geometry = new THREE.BufferGeometry().fromGeometry(platonic_geometry);
       const faceMaterials = [
-        new THREE.MeshBasicMaterial({flatShading: true, depthTest: true, color: 0xff0000, transparent: true, opacity: .1}),
+        new THREE.MeshBasicMaterial({flatShading: true, depthTest: true, color: 0xff0000, transparent: true, opacity: .05}),
         new THREE.MeshNormalMaterial(),
-        new THREE.MeshBasicMaterial({color: 0x0000ff})
+        new THREE.MeshBasicMaterial({color: 0x0000cc}),
+        new THREE.MeshBasicMaterial({color: 0xcc0000})
       ];
 
       this.icoSphere.mesh = new THREE.Mesh(platonic_buffer_geometry, faceMaterials);
@@ -396,9 +422,14 @@ class IcoSphere extends React.Component {
     this.updateGeometry();
   }
 
+  toggleOffsetVertices(value) {
+    this.ui.offsetVertices = value;
+    this.updateGeometry();
+  }
+
   toggleProjection(value) {
-    if (value !== this.icoSphere.projectVert) {
-      this.icoSphere.projectVert = value;
+    if (value !== this.ui.projectVert) {
+      this.ui.projectVert = value;
       this.updateGeometry();
     }
   }
@@ -410,7 +441,9 @@ class IcoSphere extends React.Component {
 
   viewLines(visible) {
     this.ui.showLines = visible;
-    if (this.icoSphere.layerEdgeLines) this.icoSphere.layerEdgeLines.visible = this.ui.showLines;
+    if (this.icoSphere.layerEdgeLines) {
+      this.icoSphere.layerEdgeLines.visible = this.ui.showLines;
+    }
   }
 
   viewNormals(visible) {
@@ -449,9 +482,10 @@ class IcoSphere extends React.Component {
           <canvas ref={ref => this.canvas = ref}/>
         </div>
         <dg.GUI>
-          <dg.Number label='Subdivision' value={this.icoSphere.level} min={1} max={5} step={1} onChange={this.onChangeLevel}/>
+          <dg.Number label='Subdivision' value={this.icoSphere.level} min={1} max={6} step={1} onChange={this.onChangeLevel}/>
           <dg.Number label='Slice' value={this.ui.slice} min={0} max={1} step={.01} onChange={this.onUpdateSlice}/>
-          <dg.Checkbox label='projectVert' checked={this.icoSphere.projectVert} onFinishChange={this.toggleProjection}/>
+          <dg.Checkbox label='Offset-Vertices' checked={this.ui.offsetVertices} onFinishChange={this.toggleOffsetVertices}/>
+          <dg.Checkbox label='projectVert' checked={this.ui.projectVert} onFinishChange={this.toggleProjection}/>
           <dg.Checkbox label='showMesh' checked={this.ui.showMesh} onFinishChange={this.viewMesh}/>
           <dg.Checkbox label='showLines' checked={this.ui.showLines} onFinishChange={this.viewLines}/>
           <dg.Checkbox label='showNormals' checked={this.ui.showNormals} onFinishChange={this.viewNormals}/>
