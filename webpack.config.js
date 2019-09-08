@@ -122,7 +122,14 @@ let rules = [
     // handle inline svgs (as react components)
     test: /\.inline\.svg$/,
     loader: 'svg-react-loader'
-  }
+  },
+  {
+    test: /\.(glsl|frag|vert)$/,
+    use: [
+      require.resolve('raw-loader'),
+      require.resolve('glslify-loader'),
+    ]
+  },
 ];
 
 let config = {

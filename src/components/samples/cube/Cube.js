@@ -5,7 +5,9 @@ import 'gsap/TweenMax';
 import OrbitControls from "../../../webgl/three/controls/OrbitControls";
 import CloseIcon from 'core/icons/close.inline.svg';
 import '../Scene.scss'
-// import point_vert from 'point_vert.glsl';
+import image from '../cube/s.png';
+import point_vert from '../cube/point_vert.glsl';
+import point_frag from '../cube/point_frag.glsl';
 // import point_frag from 'point_frag.glsl';
 
 
@@ -40,57 +42,26 @@ class Cube extends React.Component {
     window.removeEventListener('resize', this.onResize, true);
   }
 
-  vertexShader() {
-    return `
-    uniform float amplitude;
-    attribute float size;
-    attribute vec3 customColor;
-    varying vec3 vColor;
-    varying vec3 vPos;
-    
-    void main() {
-    vColor = customColor;
-    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    vPos = mvPosition.xyz;
-    //gl_PointSize = 1.0 * ( 10.0 / mvPosition.z );
-    gl_PointSize = 50.0;
-    //gl_PointSize = mvPosition.z*1000.0;
-    gl_Position = projectionMatrix * mvPosition;
-}
-  `
-  }
-
-  fragmentShader() {
-    return `
-    uniform vec3 color;
-    //uniform sampler2D texture;
-    varying vec3 vColor;
-    varying vec3 vPos;
-    void main() {
-      float d = vPos.x;
-      vec3 newColor = vec3(d, d, d);
-      gl_FragColor = vec4( newColor, 1.0 );
-      //gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );
-}
-  `
-  }
 
   initPoint() {
+    let texture = new THREE.TextureLoader().load(image);
+
     let vertices = [-.5, .5, .5];
     let geometry = new THREE.BufferGeometry();
     geometry.addAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
 
     let pointShader = new THREE.ShaderMaterial({
       uniforms: {
-        amplitude: {value: 1.0},
-        size: {value: 100.0},
-        color: {value: new THREE.Color(Math.random() * 0xFFFFFF)},
+        // amplitude: {value: 1.0},
+        // color: {value: new THREE.Color(Math.random() * 0xffffff)},
+        texture: {type: 't', value: texture}
       },
-      vertexShader: this.vertexShader(),
-      fragmentShader: this.fragmentShader(),
+      vertexShader: point_vert,
+      fragmentShader: point_frag,
       depthTest: true,
-      transparent: true
+      transparent: true,
     });
+
 
     let points = new THREE.Points(geometry, pointShader);
     this.cube.add(points);

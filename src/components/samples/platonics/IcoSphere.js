@@ -73,7 +73,6 @@ class IcoSphere extends React.Component {
     TweenMax.to(this.canvasWrapper, .5, {delay: .5, opacity: 1, ease: Cubic.easeIn});
   }
 
-
   componentWillUnmount() {
     window.removeEventListener('resize', this.onResize, true);
   }
@@ -175,7 +174,6 @@ class IcoSphere extends React.Component {
     }
   }
 
-
   clearEdgeLines() {
     for (let i = 0; i < this.icoSphere.edgeLines.length; i++) {
       this.icoSphere.edgeLines[i].material.dispose();
@@ -274,7 +272,6 @@ class IcoSphere extends React.Component {
     }
   }
 
-
   initIcoSphere(type, radius = 1, subdivision = 0, projectToSphere = false) {
 
     // TODO => vertice labels
@@ -292,19 +289,28 @@ class IcoSphere extends React.Component {
       const vertices = platonic_geometry.vertices;
 
       this.setProjection(vertices, subdivision, radius, projectToSphere);
+      this.createEdges(vertices, faces);
+      this.createEdgeLines();
 
       // => set indices / get edge-count
       for (let v = 0; v < vertices.length; v++) {
         const vert = vertices[v];
         vert._delete = vert.y <= this.ui.sliceValue;
-        vert._neighbours = 0;
+        vert._edges = [];
         vert._index = v;
-        for (let i = 0; i < faces.length; i++) {
-          const face = faces[i];
-          if (face.a === v || face.b === v || face.c === v) {
-            vert._neighbours++;
+
+        for (let i = 0; i < this.icoSphere.edges.length; i++) {
+          const edge = this.icoSphere.edges[i];
+          let indices = edge._indices.split(',');
+          indices = indices.map((i) => {
+            return ~~i;
+          });
+
+          if (indices[0] === v || indices[1] === v) {
+            vert._edges.push(edge);
           }
         }
+
       }
 
       // face colors
@@ -316,7 +322,7 @@ class IcoSphere extends React.Component {
           if (vertice._delete === true) {
             if (face.a === vertice._index || face.b === vertice._index || face.c === vertice._index) face._delete = true;
           }
-          if (vertice._neighbours === 5 && vertice._delete === false) {
+          if (vertice._edges.length === 5 && vertice._delete === false) {
             if (face.a === vertice._index || face.b === vertice._index || face.c === vertice._index) {
               matIndex = 2;
             }
@@ -326,8 +332,6 @@ class IcoSphere extends React.Component {
         face.materialIndex = matIndex;
       }
 
-      this.createEdges(vertices, faces);
-      this.createEdgeLines();
       if (this.ui.offsetVertices) this.offsetVerticesForPrint(vertices);
 
 
