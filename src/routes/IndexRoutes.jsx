@@ -4,6 +4,7 @@ import {hot} from 'react-hot-loader';
 import IndexPage from 'pages/IndexPage';
 import NotFoundPage from 'pages/NotFoundPage';
 import Cube from "../components/samples/cube/Cube";
+import Dissolve from "../components/samples/dissolve/Dissolve";
 import TidesVisualizer from "../components/samples/tides-visualizer/TidesVisualizer";
 import Platonics from "../components/samples/platonics/Platonics";
 import IcoSphere from "../components/samples/platonics/IcoSphere";
@@ -21,6 +22,7 @@ class IndexRoutes extends React.Component {
         <Switch>
           <Route exact path="/" component={IndexPage}/>
           <Route path="/cube" component={Cube}/>
+          <Route path="/dissolve" component={Dissolve}/>
           <Route path="/tides-visualizer" component={TidesVisualizer}/>
           <Route path="/platonics" component={Platonics}/>
           <Route path="/icosphere" component={IcoSphere}/>

@@ -5,6 +5,11 @@ export const samples = [
     route: '/cube'
   },
   {
+    title: 'Dissolve',
+    description: 'Here some description text ...',
+    route: '/dissolve'
+  },
+  {
     title: 'TidesVisualizer',
     description: 'Here some other description text ...',
     route: '/tides-visualizer'
