@@ -27,6 +27,7 @@ class IcoSphere extends React.Component {
     this.onChangeLevel = this.onChangeLevel.bind(this);
     this.onUpdateSlice = this.onUpdateSlice.bind(this);
     this.viewMesh = this.viewMesh.bind(this);
+    this.viewHubs = this.viewHubs.bind(this);
     this.viewLines = this.viewLines.bind(this);
     this.viewNormals = this.viewNormals.bind(this);
     this.showGrid = this.showGrid.bind(this);
@@ -40,6 +41,8 @@ class IcoSphere extends React.Component {
       radius: 1,
       level: 2,
       mesh: null,
+      vertices: [],
+      hubs: [],
       edges: [],
       edgeLines: [],
       vertexNormals: null
@@ -52,6 +55,7 @@ class IcoSphere extends React.Component {
       sliceValue: -this.icoSphere.radius,
       offsetVertices: false,
       showMesh: false,
+      showHubs: true,
       showLines: true,
       showNormals: false,
       showGrid: false,
@@ -87,7 +91,7 @@ class IcoSphere extends React.Component {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(VR_BG_COLOR);
 
-    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, .1, 1000);
+    this.camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, .1, 1000);
     this.camera.position.set(0, 0, 0);
 
     let light = new THREE.AmbientLight(0xffffff, .5);
@@ -95,7 +99,7 @@ class IcoSphere extends React.Component {
 
     // ui
     this.initControls();
-    this.showGrid(this.ui.showGrid)
+    this.showGrid(this.ui.showGrid);
     this.showAxis(this.ui.showAxis)
 
   }
@@ -256,6 +260,28 @@ class IcoSphere extends React.Component {
     }
   }
 
+  addGeometryLayer() {
+    this.icoSphere.layerHubs = new THREE.Object3D();
+    this.scene.add(this.icoSphere.layerHubs);
+  }
+
+  addHub(vPos) {
+    const geometry = new THREE.SphereGeometry(.025, 16, 16);
+    const material = new THREE.MeshPhongMaterial({color: 0xccccff});
+    const hub = new THREE.Mesh(geometry, material);
+    hub.position.set(vPos.x, vPos.y, vPos.z);
+    this.icoSphere.hubs.push(hub);
+    return hub;
+  }
+
+  clearGeometryLayer() {
+    for (let i = 0; i < this.icoSphere.hubs.length; i++) {
+      this.icoSphere.hubs[i].material.dispose();
+      this.icoSphere.layerHubs.remove(this.icoSphere.hubs[i]);
+    }
+    this.icoSphere.hubs = [];
+  }
+
 
   setProjection(vertices, subdivision, radius, projectToSphere) {
     for (let v = 0; v < vertices.length; v++) {
@@ -291,6 +317,8 @@ class IcoSphere extends React.Component {
       this.setProjection(vertices, subdivision, radius, projectToSphere);
       this.createEdges(vertices, faces);
       this.createEdgeLines();
+      this.clearGeometryLayer();
+      this.addGeometryLayer();
 
       // => set indices / get edge-count
       for (let v = 0; v < vertices.length; v++) {
@@ -310,6 +338,8 @@ class IcoSphere extends React.Component {
             vert._edges.push(edge);
           }
         }
+
+        this.icoSphere.vertices.push(vert);
 
       }
 
@@ -353,7 +383,10 @@ class IcoSphere extends React.Component {
 
       for (let i = 0; i < vertices.length; i++) {
         const vert = vertices[i];
-        if (!vert._delete) _vertices.push(vert)
+        if (!vert._delete) {
+          _vertices.push(vert);
+          this.icoSphere.layerHubs.add(this.addHub(vert));
+        }
       }
 
       // console.log('>', _vertices);
@@ -396,8 +429,8 @@ class IcoSphere extends React.Component {
     this.controls.enableDamping = true;
     this.controls.enablePan = false;
     this.controls.dampingFactor = 0.15;
-    this.controls.minDistance = 2;
-    this.controls.maxDistance = 5;
+    this.controls.minDistance = 4;
+    this.controls.maxDistance = 7;
     // this.controls.maxPolarAngle = Math.PI / 2;
   }
 
@@ -455,6 +488,13 @@ class IcoSphere extends React.Component {
     if (this.icoSphere.vertexNormals) this.icoSphere.vertexNormals.visible = this.ui.showNormals;
   }
 
+  viewHubs(visible) {
+    this.ui.showHubs = visible;
+    if (this.icoSphere.layerHubs) {
+      this.icoSphere.layerHubs.visible = this.ui.showHubs;
+    }
+  }
+
   showGrid(visible) {
     if (visible) {
       const grid = new THREE.GridHelper(3, 15, 0x0000ff, 0x808080);
@@ -493,6 +533,7 @@ class IcoSphere extends React.Component {
           <dg.Checkbox label='showMesh' checked={this.ui.showMesh} onFinishChange={this.viewMesh}/>
           <dg.Checkbox label='showLines' checked={this.ui.showLines} onFinishChange={this.viewLines}/>
           <dg.Checkbox label='showNormals' checked={this.ui.showNormals} onFinishChange={this.viewNormals}/>
+          <dg.Checkbox label='showHubs' checked={this.ui.showHubs} onFinishChange={this.viewHubs}/>
           <dg.Checkbox label='showGrid' checked={this.ui.showGrid} onFinishChange={this.showGrid}/>
           <dg.Checkbox label='showAxis' checked={this.ui.showAxis} onFinishChange={this.showAxis}/>
         </dg.GUI>
