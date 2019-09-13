@@ -13,11 +13,10 @@ float range = 1.05;
 
 void main() {
 
-  vec4 diffuse = texture2D(texture, vUv);
-  vec4 color = diffuse;
+  vec4 color = texture2D(texture, vUv);
   vec4 noise = texture2D(noise, vUv);
   float dissolve = noise.r;
-  float rate = mod(time / range, 1.);
+  float rate = mod(time / range, 1.0);
   float offset = rate + gradientOffset;
 
   if (dissolve < rate) discard;
