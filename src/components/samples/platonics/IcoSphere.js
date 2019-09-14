@@ -68,6 +68,11 @@ class IcoSphere extends React.Component {
   componentDidMount() {
 
     this.initThree();
+
+
+    this.addLayerEdgeLines();
+    this.addGeometryLayer();
+
     this.initIcoSphere(types[PLATONIC_TYPE.ICOSAHEDRON], this.icoSphere.radius, this.icoSphere.level, this.ui.projectVert);
 
     window.addEventListener('resize', this.onResize, true);
@@ -124,6 +129,11 @@ class IcoSphere extends React.Component {
     if (this.icoSphere.edgeLines.length > 0) {
       this.clearEdgeLines();
     }
+
+    if (this.icoSphere.hubs.length > 0) {
+      this.clearGeometryLayer();
+    }
+
 
     if (this.icoSphere.vertexNormals != null) {
       this.scene.remove(this.icoSphere.vertexNormals);
@@ -186,9 +196,13 @@ class IcoSphere extends React.Component {
     this.icoSphere.edgeLines = [];
   }
 
+  addLayerEdgeLines() {
+    this.icoSphere.layerEdgeLines = new THREE.Object3D();
+    this.scene.add(this.icoSphere.layerEdgeLines);
+  }
+
   createEdgeLines() {
 
-    this.icoSphere.layerEdgeLines = new THREE.Object3D();
 
     const edges = this.icoSphere.edges;
 
@@ -265,11 +279,34 @@ class IcoSphere extends React.Component {
     this.scene.add(this.icoSphere.layerHubs);
   }
 
-  addHub(vPos) {
-    const geometry = new THREE.SphereGeometry(.025, 16, 16);
-    const material = new THREE.MeshPhongMaterial({color: 0xccccff});
+  addHub(vertex) {
+
+    const getHubColor = (edgeCount) => {
+      let color = new THREE.Color();
+      color.set('#ff07f2');
+      if (edgeCount === 5) {
+        color.set('#a30000');
+      } else if (edgeCount === 6) {
+        color.set('#06a2a3');
+      }
+      return color;
+    };
+
+    const edge = vertex._edges[0];
+    const end = edge.end.clone();
+    const start = edge.start.clone();
+    const edgeDirection = end.sub(start).normalize();
+    const vNormalized = vertex.clone().normalize();
+    const dotProduct = vNormalized.dot(edgeDirection)
+
+    const angle = Math.acos(dotProduct);
+
+    console.log(angle * 57.2958 - 90)
+
+    const geometry = new THREE.SphereGeometry(.02, 16, 16);
+    const material = new THREE.MeshBasicMaterial({color: getHubColor(vertex._edges.length)});
     const hub = new THREE.Mesh(geometry, material);
-    hub.position.set(vPos.x, vPos.y, vPos.z);
+    hub.position.set(vertex.x, vertex.y, vertex.z);
     this.icoSphere.hubs.push(hub);
     return hub;
   }
@@ -315,18 +352,23 @@ class IcoSphere extends React.Component {
       const vertices = platonic_geometry.vertices;
 
       this.setProjection(vertices, subdivision, radius, projectToSphere);
-      this.createEdges(vertices, faces);
-      this.createEdgeLines();
-      this.clearGeometryLayer();
-      this.addGeometryLayer();
+      // this.clearGeometryLayer();
+      // this.addGeometryLayer();
 
-      // => set indices / get edge-count
+      // => ico-sphere verices / slicing
       for (let v = 0; v < vertices.length; v++) {
         const vert = vertices[v];
         vert._delete = vert.y <= this.ui.sliceValue;
         vert._edges = [];
         vert._index = v;
+        this.icoSphere.vertices.push(vert);
+      }
 
+      this.createEdges(vertices, faces);
+      this.createEdgeLines();
+
+      for (let v = 0; v < vertices.length; v++) {
+        const vert = vertices[v];
         for (let i = 0; i < this.icoSphere.edges.length; i++) {
           const edge = this.icoSphere.edges[i];
           let indices = edge._indices.split(',');
@@ -338,9 +380,6 @@ class IcoSphere extends React.Component {
             vert._edges.push(edge);
           }
         }
-
-        this.icoSphere.vertices.push(vert);
-
       }
 
       // face colors
@@ -396,7 +435,7 @@ class IcoSphere extends React.Component {
       // 2. => to buffer
       const platonic_buffer_geometry = new THREE.BufferGeometry().fromGeometry(platonic_geometry);
       const faceMaterials = [
-        new THREE.MeshBasicMaterial({flatShading: true, depthTest: true, color: 0xff0000, transparent: true, opacity: .05}),
+        new THREE.MeshBasicMaterial({flatShading: true, depthTest: true, color: 0xff0000, transparent: true, opacity: .01}),
         new THREE.MeshNormalMaterial(),
         new THREE.MeshBasicMaterial({color: 0x0000cc}),
         new THREE.MeshBasicMaterial({color: 0xcc0000})
@@ -407,7 +446,6 @@ class IcoSphere extends React.Component {
 
 
       this.scene.add(this.icoSphere.mesh);
-      this.scene.add(this.icoSphere.layerEdgeLines);
       this.scene.add(this.icoSphere.vertexNormals);
 
       this.icoSphere.vertexNormals.visible = this.ui.showNormals;
