@@ -99,8 +99,14 @@ class IcoSphere extends React.Component {
     this.camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, .1, 1000);
     this.camera.position.set(0, 0, 0);
 
-    let light = new THREE.AmbientLight(0xffffff, .5);
-    this.scene.add(light);
+    let ambientLight = new THREE.AmbientLight(0xffffff, .5);
+    let lightTarget = new THREE.Object3D();
+    let mainLight = new THREE.DirectionalLight(0xffffff, .5);
+    mainLight.position.set(0, 2, 0);
+    mainLight.target = lightTarget
+    this.scene.add(lightTarget);
+    this.scene.add(mainLight);
+    this.scene.add(ambientLight);
 
     // ui
     this.initControls();
@@ -203,7 +209,6 @@ class IcoSphere extends React.Component {
 
   createEdgeLines() {
 
-
     const edges = this.icoSphere.edges;
 
     let _edgeLengths = [];
@@ -274,10 +279,6 @@ class IcoSphere extends React.Component {
     }
   }
 
-  addGeometryLayer() {
-    this.icoSphere.layerHubs = new THREE.Object3D();
-    this.scene.add(this.icoSphere.layerHubs);
-  }
 
   addHub(vertex) {
 
@@ -285,9 +286,9 @@ class IcoSphere extends React.Component {
       let color = new THREE.Color();
       color.set('#ff07f2');
       if (edgeCount === 5) {
-        color.set('#a30000');
-      } else if (edgeCount === 6) {
         color.set('#06a2a3');
+      } else if (edgeCount === 6) {
+        color.set('#a30000');
       }
       return color;
     };
@@ -299,16 +300,25 @@ class IcoSphere extends React.Component {
     const vNormalized = vertex.clone().normalize();
     const dotProduct = vNormalized.dot(edgeDirection)
 
+
     const angle = Math.acos(dotProduct);
+    const strutAngle = Math.abs(angle * 57.2958 - 90);
+    console.log(strutAngle.toFixed(3));
 
-    console.log(angle * 57.2958 - 90)
-
-    const geometry = new THREE.SphereGeometry(.02, 16, 16);
-    const material = new THREE.MeshBasicMaterial({color: getHubColor(vertex._edges.length)});
+    const size = .035;
+    const geometry = new THREE.CylinderGeometry(size, size, size);
+    const material = new THREE.MeshPhongMaterial({color: getHubColor(vertex._edges.length)});
     const hub = new THREE.Mesh(geometry, material);
+    const upAxis = new THREE.Vector3(0, 1, 0);
+    hub.quaternion.setFromUnitVectors(upAxis, vertex.clone().normalize());
     hub.position.set(vertex.x, vertex.y, vertex.z);
     this.icoSphere.hubs.push(hub);
     return hub;
+  }
+
+  addGeometryLayer() {
+    this.icoSphere.layerHubs = new THREE.Object3D();
+    this.scene.add(this.icoSphere.layerHubs);
   }
 
   clearGeometryLayer() {
@@ -318,7 +328,6 @@ class IcoSphere extends React.Component {
     }
     this.icoSphere.hubs = [];
   }
-
 
   setProjection(vertices, subdivision, radius, projectToSphere) {
     for (let v = 0; v < vertices.length; v++) {
@@ -407,7 +416,7 @@ class IcoSphere extends React.Component {
       // console.log(vertices);
       // console.log(faces);
 
-      // TODO => generate new Geometry
+      // TODO => generate new Geometry // add statistics
 
       let _vertices = [];
       let _faces = [];
@@ -435,11 +444,12 @@ class IcoSphere extends React.Component {
       // 2. => to buffer
       const platonic_buffer_geometry = new THREE.BufferGeometry().fromGeometry(platonic_geometry);
       const faceMaterials = [
-        new THREE.MeshBasicMaterial({flatShading: true, depthTest: true, color: 0xff0000, transparent: true, opacity: .01}),
-        new THREE.MeshNormalMaterial(),
-        new THREE.MeshBasicMaterial({color: 0x0000cc}),
-        new THREE.MeshBasicMaterial({color: 0xcc0000})
-      ];
+          new THREE.MeshBasicMaterial({flatShading: true, visible: false, depthTest: true, color: 0xff0000, transparent: true, opacity: .01}),
+          new THREE.MeshPhongMaterial({color: '#dddddd', side: THREE.DoubleSide, transparent: true, opacity: .7}),
+          new THREE.MeshPhongMaterial({color: '#121ddd', side: THREE.DoubleSide, transparent: true, opacity: .7}),
+          new THREE.MeshPhongMaterial({color: 0xcc0000})
+        ]
+      ;
 
       this.icoSphere.mesh = new THREE.Mesh(platonic_buffer_geometry, faceMaterials);
       this.icoSphere.vertexNormals = new THREE.VertexNormalsHelper(this.icoSphere.mesh, .1, 0xff0000, 1);
