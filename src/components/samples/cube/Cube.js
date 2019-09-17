@@ -1,6 +1,7 @@
 import React from 'react';
 import connect from "react-redux/es/connect/connect";
 import * as THREE from 'three';
+import {Vector3} from 'three';
 import 'gsap/TweenMax';
 import OrbitControls from "../../../webgl/three/controls/OrbitControls";
 import CloseIcon from 'core/icons/close.inline.svg';
@@ -89,6 +90,18 @@ class Cube extends React.Component {
     this.scene.add(this.cube);
 
     this.initPoint();
+    this.tubeTest();
+  }
+
+
+  tubeTest() {
+    const start = new Vector3(-1, 0, 0);
+    const end = new Vector3(1, 0, 0);
+    const path = new THREE.LineCurve3(start, end);
+    const geometry = new THREE.TubeGeometry(path, 20, .3, 3, true);
+    const material = new THREE.MeshBasicMaterial({color: 0x00ff00, side: THREE.DoubleSide});
+    const mesh = new THREE.Mesh(geometry, material);
+    this.scene.add(mesh);
   }
 
   onResize() {

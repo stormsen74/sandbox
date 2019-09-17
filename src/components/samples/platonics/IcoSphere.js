@@ -28,6 +28,7 @@ class IcoSphere extends React.Component {
     this.onUpdateSlice = this.onUpdateSlice.bind(this);
     this.viewMesh = this.viewMesh.bind(this);
     this.viewHubs = this.viewHubs.bind(this);
+    this.viewStruts = this.viewStruts.bind(this);
     this.viewLines = this.viewLines.bind(this);
     this.viewNormals = this.viewNormals.bind(this);
     this.showGrid = this.showGrid.bind(this);
@@ -43,9 +44,13 @@ class IcoSphere extends React.Component {
       mesh: null,
       vertices: [],
       hubs: [],
+      layerHubs: null,
+      struts: [],
+      layerStruts: null,
       edges: [],
       edgeLines: [],
-      vertexNormals: null
+      vertexNormals: null,
+
     };
 
     this.ui = {
@@ -56,6 +61,7 @@ class IcoSphere extends React.Component {
       offsetVertices: false,
       showMesh: false,
       showHubs: true,
+      showStruts: false,
       showLines: true,
       showNormals: false,
       showGrid: false,
@@ -136,7 +142,7 @@ class IcoSphere extends React.Component {
       this.clearEdgeLines();
     }
 
-    if (this.icoSphere.hubs.length > 0) {
+    if (this.icoSphere.hubs.length > 0 && this.icoSphere.struts.length > 0 ) {
       this.clearGeometryLayer();
     }
 
@@ -244,6 +250,8 @@ class IcoSphere extends React.Component {
         const edgeLength = parseFloat(edge.length.toFixed(5));
         if (edgeLength === l) {
           material.color.set(edgeColors[index])
+          edge._colorIndex = index;
+          console.log(edge)
         }
       });
 
@@ -253,6 +261,13 @@ class IcoSphere extends React.Component {
         const edgeLine = new THREE.Line(edgeGeometry, material);
         this.icoSphere.edgeLines.push(edgeLine);
         this.icoSphere.layerEdgeLines.add(edgeLine);
+
+        const path = new THREE.LineCurve3(edge.start, edge.end);
+        const strutGeometry = new THREE.TubeGeometry(path, 1, .01, 5, false);
+        const strutMaterial = new THREE.MeshPhongMaterial({color: edgeColors[edge._colorIndex]});
+        const strut = new THREE.Mesh(strutGeometry, strutMaterial);
+        this.icoSphere.struts.push(strut);
+        this.icoSphere.layerStruts.add(strut);
       }
     }
 
@@ -319,6 +334,9 @@ class IcoSphere extends React.Component {
   addGeometryLayer() {
     this.icoSphere.layerHubs = new THREE.Object3D();
     this.scene.add(this.icoSphere.layerHubs);
+
+    this.icoSphere.layerStruts = new THREE.Object3D();
+    this.scene.add(this.icoSphere.layerStruts);
   }
 
   clearGeometryLayer() {
@@ -327,6 +345,12 @@ class IcoSphere extends React.Component {
       this.icoSphere.layerHubs.remove(this.icoSphere.hubs[i]);
     }
     this.icoSphere.hubs = [];
+
+    for (let i = 0; i < this.icoSphere.struts.length; i++) {
+      this.icoSphere.struts[i].material.dispose();
+      this.icoSphere.layerStruts.remove(this.icoSphere.struts[i]);
+    }
+    this.icoSphere.struts = [];
   }
 
   setProjection(vertices, subdivision, radius, projectToSphere) {
@@ -543,6 +567,13 @@ class IcoSphere extends React.Component {
     }
   }
 
+  viewStruts(visible) {
+    this.ui.showStruts = visible;
+    if (this.icoSphere.layerStruts) {
+      this.icoSphere.layerStruts.visible = this.ui.showStruts;
+    }
+  }
+
   showGrid(visible) {
     if (visible) {
       const grid = new THREE.GridHelper(3, 15, 0x0000ff, 0x808080);
@@ -582,6 +613,7 @@ class IcoSphere extends React.Component {
           <dg.Checkbox label='showLines' checked={this.ui.showLines} onFinishChange={this.viewLines}/>
           <dg.Checkbox label='showNormals' checked={this.ui.showNormals} onFinishChange={this.viewNormals}/>
           <dg.Checkbox label='showHubs' checked={this.ui.showHubs} onFinishChange={this.viewHubs}/>
+          <dg.Checkbox label='showStruts' checked={this.ui.showStruts} onFinishChange={this.viewStruts}/>
           <dg.Checkbox label='showGrid' checked={this.ui.showGrid} onFinishChange={this.showGrid}/>
           <dg.Checkbox label='showAxis' checked={this.ui.showAxis} onFinishChange={this.showAxis}/>
         </dg.GUI>
