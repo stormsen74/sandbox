@@ -59,6 +59,7 @@ class IcoSphere extends React.Component {
       hubs: [],
       layerHubs: null,
       struts: [],
+      strutTypes: [],
       layerStruts: null,
       edges: [],
       edgeLines: [],
@@ -169,7 +170,12 @@ class IcoSphere extends React.Component {
 
   }
 
-  createEdges(vertices, faces) {
+  addLayerEdgeLines() {
+    this.icoSphere.layerEdgeLines = new THREE.Object3D();
+    this.scene.add(this.icoSphere.layerEdgeLines);
+  }
+
+  creatIcoEdges(vertices, faces) {
     let edges = [];
     let indices = [];
     for (let i = 0; i < faces.length; i++) {
@@ -206,7 +212,7 @@ class IcoSphere extends React.Component {
 
     // remove duplicate edges
 
-    const getMatchingIndices=(sourceArray, value)=> {
+    const getMatchingIndices = (sourceArray, value) => {
       for (let i = 0, iLen = sourceArray.length; i < iLen; i++) {
         if (sourceArray[i]['_indices'] === value) return sourceArray[i];
       }
@@ -228,11 +234,6 @@ class IcoSphere extends React.Component {
     this.icoSphere.edgeLines = [];
   }
 
-  addLayerEdgeLines() {
-    this.icoSphere.layerEdgeLines = new THREE.Object3D();
-    this.scene.add(this.icoSphere.layerEdgeLines);
-  }
-
   createEdgeLines() {
 
     const edges = this.icoSphere.edges;
@@ -249,7 +250,8 @@ class IcoSphere extends React.Component {
       return a - b
     };
     edgeLengths.sort(compareNumbers);
-    console.log('create-edge-lines >', edgeLengths);
+    // console.log('create-edge-lines >', edgeLengths);
+    this.icoSphere.strutTypes = [...edgeLengths];
 
 
     for (let i = 0; i < edges.length; i++) {
@@ -303,7 +305,6 @@ class IcoSphere extends React.Component {
 
   // TODO -add angles for build-plan
   addHub(vertex) {
-
     const getHubColor = (edgeCount) => {
       let color = new THREE.Color();
       color.set('#ff07f2');
@@ -325,6 +326,7 @@ class IcoSphere extends React.Component {
 
     const angle = Math.acos(dotProduct);
     const strutAngle = Math.abs(angle * 57.2958 - 90);
+    edge['_strutAngle'] = strutAngle;
     // console.log(strutAngle.toFixed(3));
 
     const size = .025;
@@ -375,6 +377,83 @@ class IcoSphere extends React.Component {
     }
   }
 
+  setIcoVerts(vertices) {
+    // => ico-sphere vertices / slicing
+    for (let v = 0; v < vertices.length; v++) {
+      const vert = vertices[v];
+      vert['_delete'] = vert.y <= this.ui.sliceValue;
+      vert['_edges'] = [];
+      vert['_index'] = v;
+      this.icoSphere.vertices.push(vert);
+    }
+  }
+
+  addIcoEdges(vertices) {
+    for (let v = 0; v < vertices.length; v++) {
+      const vert = vertices[v];
+      for (let i = 0; i < this.icoSphere.edges.length; i++) {
+        const edge = this.icoSphere.edges[i];
+        let indices = edge._indices.split(',');
+        indices = indices.map((i) => {
+          return ~~i;
+        });
+
+        if (indices[0] === v || indices[1] === v) {
+          vert['_edges'].push(edge);
+        }
+      }
+    }
+  }
+
+  setFaceColors(faces, vertices) {
+    for (let i = 0; i < faces.length; i++) {
+      const face = faces[i];
+      let matIndex = 1;
+
+      vertices.forEach(vertice => {
+        if (vertice['_delete'] === true) {
+          if (face.a === vertice['_index'] || face.b === vertice['_index'] || face.c === vertice['_index']) face['_delete'] = true;
+        }
+        if (vertice['_edges'].length === 5 && vertice['_delete'] === false) {
+          if (face.a === vertice['_index'] || face.b === vertice['_index'] || face.c === vertice['_index']) {
+            matIndex = 2;
+          }
+        }
+      });
+
+      face.materialIndex = matIndex;
+    }
+  }
+
+  getMetrics(vertices, faces) {
+    const _vertices = [];
+    const _faces = [];
+    for (let i = 0; i < faces.length; i++) {
+      const face = faces[i];
+      if (face['_delete']) {
+        face.materialIndex = 0;
+      } else {
+        _faces.push(face);
+      }
+    }
+
+    for (let i = 0; i < vertices.length; i++) {
+      const vert = vertices[i];
+      if (!vert['_delete']) {
+        _vertices.push(vert);
+        console.log(vert);
+        this.icoSphere.layerHubs.add(this.addHub(vert));
+      }
+    }
+
+    console.log('HUB COUNT: ', _vertices.length);
+    console.log('STRUTS: ');
+    this.icoSphere.strutTypes.forEach((s, i) => {
+      console.log('|' + i.toString() + '| - ' + s.toString());
+    });
+    // console.log('>', _faces);
+  }
+
   initIcoSphere(type, radius = 1, subdivision = 0, projectToSphere = false) {
 
     // TODO => vertice labels
@@ -393,51 +472,15 @@ class IcoSphere extends React.Component {
 
       this.setProjection(vertices, subdivision, radius, projectToSphere);
 
-      // => ico-sphere verices / slicing
-      for (let v = 0; v < vertices.length; v++) {
-        const vert = vertices[v];
-        vert['_delete'] = vert.y <= this.ui.sliceValue;
-        vert['_edges'] = [];
-        vert['_index'] = v;
-        this.icoSphere.vertices.push(vert);
-      }
+      this.setIcoVerts(vertices);
 
-      this.createEdges(vertices, faces);
+      this.creatIcoEdges(vertices, faces);
+
       this.createEdgeLines();
 
-      for (let v = 0; v < vertices.length; v++) {
-        const vert = vertices[v];
-        for (let i = 0; i < this.icoSphere.edges.length; i++) {
-          const edge = this.icoSphere.edges[i];
-          let indices = edge._indices.split(',');
-          indices = indices.map((i) => {
-            return ~~i;
-          });
+      this.addIcoEdges(vertices);
 
-          if (indices[0] === v || indices[1] === v) {
-            vert['_edges'].push(edge);
-          }
-        }
-      }
-
-      // face colors
-      for (let i = 0; i < faces.length; i++) {
-        const face = faces[i];
-        let matIndex = 1;
-
-        vertices.forEach(vertice => {
-          if (vertice['_delete'] === true) {
-            if (face.a === vertice['_index'] || face.b === vertice['_index'] || face.c === vertice['_index']) face['_delete'] = true;
-          }
-          if (vertice['_edges'].length === 5 && vertice['_delete'] === false) {
-            if (face.a === vertice['_index'] || face.b === vertice['_index'] || face.c === vertice['_index']) {
-              matIndex = 2;
-            }
-          }
-        });
-
-        face.materialIndex = matIndex;
-      }
+      this.setFaceColors(faces, vertices);
 
       if (this.ui.offsetVertices) this.offsetVerticesForPrint(vertices);
 
@@ -447,27 +490,7 @@ class IcoSphere extends React.Component {
 
       // TODO => generate new Geometry // add statistics
 
-      let _vertices = [];
-      let _faces = [];
-      for (let i = 0; i < faces.length; i++) {
-        const face = faces[i];
-        if (face['_delete']) {
-          face.materialIndex = 0;
-        } else {
-          _faces.push(face);
-        }
-      }
-
-      for (let i = 0; i < vertices.length; i++) {
-        const vert = vertices[i];
-        if (!vert['_delete']) {
-          _vertices.push(vert);
-          this.icoSphere.layerHubs.add(this.addHub(vert));
-        }
-      }
-
-      // console.log('>', _vertices);
-      // console.log('>', _faces);
+      this.getMetrics(vertices, faces);
 
 
       // 2. => to buffer
@@ -483,7 +506,6 @@ class IcoSphere extends React.Component {
       this.icoSphere.mesh = new THREE.Mesh(platonic_buffer_geometry, faceMaterials);
       this.icoSphere.vertexNormals = new THREE.VertexNormalsHelper(this.icoSphere.mesh, .1, 0xff0000, 1);
 
-
       this.scene.add(this.icoSphere.mesh);
       this.scene.add(this.icoSphere.vertexNormals);
 
@@ -493,7 +515,6 @@ class IcoSphere extends React.Component {
       this.icoSphere.layerHubs.visible = this.ui.showHubs;
       this.icoSphere.layerStruts.visible = this.ui.showStruts;
 
-      console.log(this.icoSphere)
     }
   }
 
