@@ -251,8 +251,11 @@ class IcoSphere extends React.Component {
     };
     edgeLengths.sort(compareNumbers);
     // console.log('create-edge-lines >', edgeLengths);
-    this.icoSphere.strutTypes = [...edgeLengths];
 
+    const types = ['A', 'B', 'C', 'D', 'E'];
+    for (let i = 0; i < edgeLengths.length; i++) {
+      this.icoSphere.strutTypes[i] = {type: types[i], length: edgeLengths[i]};
+    }
 
     for (let i = 0; i < edges.length; i++) {
       const edge = edges[i];
@@ -276,7 +279,6 @@ class IcoSphere extends React.Component {
         this.addStrut(edge);
       }
     }
-
 
   }
 
@@ -383,6 +385,7 @@ class IcoSphere extends React.Component {
       const vert = vertices[v];
       vert['_delete'] = vert.y <= this.ui.sliceValue;
       vert['_edges'] = [];
+      vert['_faces'] = [];
       vert['_index'] = v;
       this.icoSphere.vertices.push(vert);
     }
@@ -439,19 +442,36 @@ class IcoSphere extends React.Component {
 
     for (let i = 0; i < vertices.length; i++) {
       const vert = vertices[i];
+      vert['_usedEdges'] = [];
       if (!vert['_delete']) {
+        vert['_edges'].forEach((edge) => {
+          this.icoSphere.strutTypes.forEach((strut, i) => {
+            if (parseFloat(edge.length.toFixed(5)) === strut.length) {
+              edge['_type'] = strut.type
+            } else {
+              edge['_type'] = 'undefined'
+            }
+          });
+          if (!edge['_delete']) vert['_usedEdges'].push(edge)
+        });
         _vertices.push(vert);
-        console.log(vert);
         this.icoSphere.layerHubs.add(this.addHub(vert));
       }
     }
 
-    console.log('HUB COUNT: ', _vertices.length);
-    console.log('STRUTS: ');
+    // Todo - addFaces by Edges
+    // https://simplydifferently.org/Geodesic_Dome_Notes?page=3#2V%20Icosahedron%20Dome
+
+    console.log('v >', _vertices);
+    console.log('f >', _faces);
+
+
+    console.log('HUBS (VERTICES): ', _vertices.length);
+    console.log('FACES: ', _faces.length);
+    console.log('STRUT TYPES: ');
     this.icoSphere.strutTypes.forEach((s, i) => {
-      console.log('|' + i.toString() + '| - ' + s.toString());
+      console.log('|' + s.type + '| - ' + s.length);
     });
-    // console.log('>', _faces);
   }
 
   initIcoSphere(type, radius = 1, subdivision = 0, projectToSphere = false) {
