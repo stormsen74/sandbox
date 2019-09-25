@@ -19,36 +19,22 @@ const VR_BG_COLOR = 0x363636;
 
 
 const edgeColors = [
-  new THREE.Color('#f1090d'),
-  new THREE.Color('#5798c2'),
-  new THREE.Color('#ff8a27'),
-  new THREE.Color('#02c2bf'),
-  new THREE.Color('#ff07f8'),
-  new THREE.Color('#e7e405'),
-  new THREE.Color('#5ce759'),
-  new THREE.Color('#3838cf'),
-  new THREE.Color('#4ad1e7'),
+  new THREE.Color('#ac1719'),
+  new THREE.Color('#4fb03d'),
+  new THREE.Color('#e5672c'),
+  new THREE.Color('#ffcc19'),
+
+  new THREE.Color('#49afff'),
+  new THREE.Color('#5e9fff'),
+  new THREE.Color('#808cff'),
+  new THREE.Color('#a574f3'),
+  new THREE.Color('#c753dc'),
 ];
 
 
 class IcoSphere extends React.Component {
   constructor(props) {
     super(props);
-
-    this.draw = this.draw.bind(this);
-    this.onResize = this.onResize.bind(this);
-    this.onChangeLevel = this.onChangeLevel.bind(this);
-    this.onUpdateSlice = this.onUpdateSlice.bind(this);
-    this.viewMesh = this.viewMesh.bind(this);
-    this.viewHubs = this.viewHubs.bind(this);
-    this.viewStruts = this.viewStruts.bind(this);
-    this.viewLines = this.viewLines.bind(this);
-    this.viewNormals = this.viewNormals.bind(this);
-    this.showGrid = this.showGrid.bind(this);
-    this.showAxis = this.showAxis.bind(this);
-    this.toggleProjection = this.toggleProjection.bind(this);
-    this.toggleOffsetVertices = this.toggleOffsetVertices.bind(this);
-
 
     this.icoSphere = {
       type: PLATONIC_TYPE.ICOSAHEDRON,
@@ -468,8 +454,9 @@ class IcoSphere extends React.Component {
 
     // Todo - getHubAngles _\|/_ / getHubTypes / radius - scaling /
     // https://simplydifferently.org/Geodesic_Dome_Notes?page=3#2V%20Icosahedron%20Dome
+    // http://www.neolithicsphere.com/geodesica/doc/isolate_vertex.html
 
-    console.log('v >', _vertices);
+    // console.log('v >', _vertices);
     // console.log('f >', _faces);
     // console.log('e >', _edges);
 
@@ -546,13 +533,6 @@ class IcoSphere extends React.Component {
     }
   }
 
-  onResize() {
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
-  }
-
-
   initControls() {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
@@ -567,71 +547,81 @@ class IcoSphere extends React.Component {
     this.controls.update();
   }
 
+  onResize = () => {
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+  }
 
-  draw() {
+  draw = () => {
     requestAnimationFrame(this.draw);
     this.update();
     this.renderer.render(this.scene, this.camera);
-  }
+  };
 
+  // UI - UPDATES
 
-  onChangeLevel(level) {
+  onChangeRadius = () => {
+    console.log('R', this.icoSphere.radius);
+  };
+
+  onChangeLevel = (level) => {
     if (level !== this.icoSphere.level) {
       this.icoSphere.level = level;
       this.updateGeometry();
     }
-  }
+  };
 
-  onUpdateSlice(slice) {
+  onUpdateSlice = (slice) => {
     const sliceValue = mathUtils.convertToRange(slice, [0, 1], [-this.icoSphere.radius, this.icoSphere.radius]);
     this.ui.sliceValue = sliceValue;
     this.updateGeometry();
-  }
+  };
 
-  toggleOffsetVertices(value) {
+  toggleOffsetVertices = (value) => {
     this.ui.offsetVertices = value;
     this.updateGeometry();
-  }
+  };
 
-  toggleProjection(value) {
+  toggleProjection = (value) => {
     if (value !== this.ui.projectVert) {
       this.ui.projectVert = value;
       this.updateGeometry();
     }
-  }
+  };
 
-  viewMesh(visible) {
+  viewMesh = (visible) => {
     this.ui.showMesh = visible;
     if (this.icoSphere.mesh) this.icoSphere.mesh.visible = this.ui.showMesh
-  }
+  };
 
-  viewLines(visible) {
+  viewLines = (visible) => {
     this.ui.showLines = visible;
     if (this.icoSphere.layerEdgeLines) {
       this.icoSphere.layerEdgeLines.visible = this.ui.showLines;
     }
-  }
+  };
 
-  viewNormals(visible) {
+  viewNormals = (visible) => {
     this.ui.showNormals = visible;
     if (this.icoSphere.vertexNormals) this.icoSphere.vertexNormals.visible = this.ui.showNormals;
-  }
+  };
 
-  viewHubs(visible) {
+  viewHubs = (visible) => {
     this.ui.showHubs = visible;
     if (this.icoSphere.layerHubs) {
       this.icoSphere.layerHubs.visible = this.ui.showHubs;
     }
-  }
+  };
 
-  viewStruts(visible) {
+  viewStruts = (visible) => {
     this.ui.showStruts = visible;
     if (this.icoSphere.layerStruts) {
       this.icoSphere.layerStruts.visible = this.ui.showStruts;
     }
-  }
+  };
 
-  showGrid(visible) {
+  showGrid = (visible) => {
     if (visible) {
       const grid = new THREE.GridHelper(2, 2, 0x0000ff, 0x808080);
       grid.name = 'grid';
@@ -641,9 +631,9 @@ class IcoSphere extends React.Component {
       this.scene.remove(_grid);
       _grid = null;
     }
-  }
+  };
 
-  showAxis(visible) {
+  showAxis = (visible) => {
     if (visible) {
       const axisHelper = new THREE.AxesHelper(1.5);
       axisHelper.name = 'axisHelper';
@@ -653,7 +643,7 @@ class IcoSphere extends React.Component {
       this.scene.remove(_axisHelper);
       _axisHelper = null;
     }
-  }
+  };
 
   render() {
     return (
@@ -662,6 +652,7 @@ class IcoSphere extends React.Component {
           <canvas ref={ref => this.canvas = ref}/>
         </div>
         <dg.GUI>
+          <dg.Number label='Radius' value={this.icoSphere.radius} min={1} max={6} step={.1} onChange={this.onChangeRadius}/>
           <dg.Number label='Subdivision' value={this.icoSphere.level} min={1} max={6} step={1} onChange={this.onChangeLevel}/>
           <dg.Number label='Slice' value={this.ui.slice} min={0} max={1} step={.01} onChange={this.onUpdateSlice}/>
           <dg.Checkbox label='Offset-Vertices' checked={this.ui.offsetVertices} onFinishChange={this.toggleOffsetVertices}/>
