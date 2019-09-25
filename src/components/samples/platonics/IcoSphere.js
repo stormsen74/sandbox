@@ -202,9 +202,9 @@ class IcoSphere extends React.Component {
       let del_bc = vertices[bc[0]]['_delete'] || vertices[bc[1]]['_delete'];
       let del_ca = vertices[ca[0]]['_delete'] || vertices[ca[1]]['_delete'];
 
-      let edge_ab = {start: vertices[ab[0]], end: vertices[ab[1]], length: length_ab, _indices: ab.toString(), _delete: del_ab};
-      let edge_bc = {start: vertices[bc[0]], end: vertices[bc[1]], length: length_bc, _indices: bc.toString(), _delete: del_bc};
-      let edge_ca = {start: vertices[ca[0]], end: vertices[ca[1]], length: length_ca, _indices: ca.toString(), _delete: del_ca};
+      let edge_ab = {start: vertices[ab[0]], end: vertices[ab[1]], length: parseFloat(length_ab.toFixed(5)), _indices: ab.toString(), _delete: del_ab};
+      let edge_bc = {start: vertices[bc[0]], end: vertices[bc[1]], length: parseFloat(length_bc.toFixed(5)), _indices: bc.toString(), _delete: del_bc};
+      let edge_ca = {start: vertices[ca[0]], end: vertices[ca[1]], length: parseFloat(length_ca.toFixed(5)), _indices: ca.toString(), _delete: del_ca};
 
       edges.push(edge_ab, edge_bc, edge_ca);
       indices.push(ab.toString(), bc.toString(), ca.toString())
@@ -240,8 +240,7 @@ class IcoSphere extends React.Component {
 
     let _edgeLengths = [];
     for (let i = 0; i < edges.length; i++) {
-      const edgeLength = parseFloat(edges[i].length.toFixed(5));
-      _edgeLengths.push(edgeLength);
+      _edgeLengths.push(edges[i].length);
     }
     // remove duplicates
     const edgeLengths = [...new Set(_edgeLengths)];
@@ -252,20 +251,19 @@ class IcoSphere extends React.Component {
     edgeLengths.sort(compareNumbers);
     // console.log('create-edge-lines >', edgeLengths);
 
-    const types = ['A', 'B', 'C', 'D', 'E'];
+    this.icoSphere.strutTypes = [];
+    const types = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
     for (let i = 0; i < edgeLengths.length; i++) {
-      this.icoSphere.strutTypes[i] = {type: types[i], length: edgeLengths[i]};
+      this.icoSphere.strutTypes[i] = {type: types[i], length: edgeLengths[i], strutAngle: null, count: 0};
     }
 
     for (let i = 0; i < edges.length; i++) {
       const edge = edges[i];
       const material = new THREE.LineBasicMaterial();
       edgeLengths.forEach((l, index) => {
-        const edgeLength = parseFloat(edge.length.toFixed(5));
-        if (edgeLength === l) {
+        if (edge.length === l) {
           material.color.set(edgeColors[index])
           edge['_colorIndex'] = index;
-          // console.log(edge)
         }
       });
 
@@ -275,7 +273,6 @@ class IcoSphere extends React.Component {
         const edgeLine = new THREE.Line(edgeGeometry, material);
         this.icoSphere.edgeLines.push(edgeLine);
         this.icoSphere.layerEdgeLines.add(edgeLine);
-
         this.addStrut(edge);
       }
     }
@@ -305,35 +302,19 @@ class IcoSphere extends React.Component {
     }
   }
 
-  // TODO -add angles for build-plan
   addHub(vertex) {
     const getHubColor = (edgeCount) => {
       let color = new THREE.Color();
-      color.set('#ff07f2');
-      if (edgeCount === 5) {
-        color.set('#06a2a3');
-      } else if (edgeCount === 6) {
-        color.set('#a30000');
-      }
+      color.set('#ff07f2'); // unset
+      if (edgeCount === 4) color.set('#12a306');
+      if (edgeCount === 5) color.set('#06a2a3');
+      if (edgeCount === 6) color.set('#a30000');
       return color;
     };
 
-    const edge = vertex['_edges'][0];
-    const end = edge.end.clone();
-    const start = edge.start.clone();
-    const edgeDirection = end.sub(start).normalize();
-    const vNormalized = vertex.clone().normalize();
-    const dotProduct = vNormalized.dot(edgeDirection);
-
-
-    const angle = Math.acos(dotProduct);
-    const strutAngle = Math.abs(angle * 57.2958 - 90);
-    edge['_strutAngle'] = strutAngle;
-    // console.log(strutAngle.toFixed(3));
-
     const size = .025;
     const geometry = new THREE.CylinderGeometry(size, size, size);
-    const material = new THREE.MeshPhongMaterial({color: getHubColor(vertex['_edges'].length)});
+    const material = new THREE.MeshPhongMaterial({color: getHubColor(vertex['_usedEdges'].length)});
     const hub = new THREE.Mesh(geometry, material);
     const upAxis = new THREE.Vector3(0, 1, 0);
     hub.quaternion.setFromUnitVectors(upAxis, vertex.clone().normalize());
@@ -429,8 +410,11 @@ class IcoSphere extends React.Component {
   }
 
   getMetrics(vertices, faces) {
+
     const _vertices = [];
+    const _edges = [];
     const _faces = [];
+
     for (let i = 0; i < faces.length; i++) {
       const face = faces[i];
       if (face['_delete']) {
@@ -444,34 +428,58 @@ class IcoSphere extends React.Component {
       const vert = vertices[i];
       vert['_usedEdges'] = [];
       if (!vert['_delete']) {
+
         vert['_edges'].forEach((edge) => {
-          this.icoSphere.strutTypes.forEach((strut, i) => {
-            if (parseFloat(edge.length.toFixed(5)) === strut.length) {
-              edge['_type'] = strut.type
-            } else {
-              edge['_type'] = 'undefined'
-            }
+          this.icoSphere.strutTypes.forEach((strut) => {
+            if (edge.length === strut.length) edge['_type'] = strut.type
           });
           if (!edge['_delete']) vert['_usedEdges'].push(edge)
         });
+
         _vertices.push(vert);
         this.icoSphere.layerHubs.add(this.addHub(vert));
       }
     }
 
-    // Todo - addFaces by Edges
+    this.icoSphere.edges.forEach(edge => {
+      if (!edge['_delete']) _edges.push(edge)
+    });
+
+    const getStrutAngle = (edge) => {
+      let indices = edge._indices.split(',');
+      const vertex = vertices[~~indices[0]]
+      const end = edge.end.clone();
+      const start = edge.start.clone();
+      const edgeDirection = end.sub(start).normalize();
+      const vNormalized = vertex.clone().normalize();
+      const dotProduct = vNormalized.dot(edgeDirection);
+      const angle = Math.acos(dotProduct);
+      return Math.abs(angle * 57.2958 - 90).toFixed(2);
+    };
+
+    this.icoSphere.strutTypes.forEach((s, i) => {
+      _edges.forEach(edge => {
+        if (edge._type === s.type) {
+          if (s.count === 0) s.strutAngle = getStrutAngle(edge);
+          s.count++;
+        }
+      });
+    });
+
+    // Todo - getHubAngles _\|/_ / getHubTypes / radius - scaling /
     // https://simplydifferently.org/Geodesic_Dome_Notes?page=3#2V%20Icosahedron%20Dome
 
     console.log('v >', _vertices);
-    console.log('f >', _faces);
+    // console.log('f >', _faces);
+    // console.log('e >', _edges);
 
-
+    console.log('=== METRICS ===');
     console.log('HUBS (VERTICES): ', _vertices.length);
-    console.log('FACES: ', _faces.length);
-    console.log('STRUT TYPES: ');
+    console.log('STRUTS: ', _edges.length);
     this.icoSphere.strutTypes.forEach((s, i) => {
-      console.log('|' + s.type + '| - ' + s.length);
+      console.log('|' + s.type + '| × ' + s.count + ' | strutLength: ' + s.length + ' | strutAngle: ' + s.strutAngle + '°');
     });
+    console.log('FACES: ', _faces.length);
   }
 
   initIcoSphere(type, radius = 1, subdivision = 0, projectToSphere = false) {
