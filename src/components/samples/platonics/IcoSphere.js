@@ -511,9 +511,9 @@ class IcoSphere extends React.Component {
       // 2. => to buffer
       const platonic_buffer_geometry = new THREE.BufferGeometry().fromGeometry(platonic_geometry);
       const faceMaterials = [
-          new THREE.MeshBasicMaterial({flatShading: true, visible: false, depthTest: true, color: 0xff0000, transparent: true, opacity: .01}),
-          new THREE.MeshPhongMaterial({color: '#dddddd', side: THREE.DoubleSide, transparent: true, opacity: .7}),
-          new THREE.MeshPhongMaterial({color: '#121ddd', side: THREE.DoubleSide, transparent: true, opacity: .7}),
+          new THREE.MeshBasicMaterial({flatShading: true, visible: false, depthTest: true, color: '#ff0000', transparent: true, opacity: .01}),
+          new THREE.MeshPhongMaterial({flatShading: true, color: '#dddddd', side: THREE.DoubleSide, transparent: true, opacity: .9}),
+          new THREE.MeshPhongMaterial({flatShading: true, color: '#121ddd', side: THREE.DoubleSide, transparent: true, opacity: .7}),
           new THREE.MeshPhongMaterial({color: 0xcc0000})
         ]
       ;
