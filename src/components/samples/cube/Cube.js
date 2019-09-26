@@ -6,7 +6,6 @@ import 'gsap/TweenMax';
 import OrbitControls from "../../../webgl/three/controls/OrbitControls";
 import CloseIcon from 'core/icons/close.inline.svg';
 import '../Scene.scss'
-import image from '../cube/s.png';
 import point_vert from '../cube/point_vert.glsl';
 import point_frag from '../cube/point_frag.glsl';
 // import point_frag from 'point_frag.glsl';
@@ -43,9 +42,39 @@ class Cube extends React.Component {
     window.removeEventListener('resize', this.onResize, true);
   }
 
+  getCanvasTexture = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
 
-  initPoint() {
-    let texture = new THREE.TextureLoader().load(image);
+    const size = 256;
+    canvas.width = size;
+    canvas.height = size;
+
+    ctx.font = "128px Verdana";
+    ctx.textBaseline = "middle";
+    const n = 23;
+    const txt = n.toString();
+    const lineWidth = 10;
+
+    ctx.beginPath();
+    ctx.arc(size * .5, size * .5, size * .5 - lineWidth, 0, 2 * Math.PI, false);
+    ctx.fillStyle = 'rgba(88,12,7,0.65)';
+    ctx.fill();
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = '#f1be2a';
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgb(128,169,233)';
+    ctx.fillText(txt, size * .5 - ctx.measureText(txt).width * .5, size * .5);
+
+    return canvas;
+
+  };
+
+  initPoint = () => {
+    // let texture = new THREE.TextureLoader().load(image);
+    //
+    const texture = new THREE.CanvasTexture(this.getCanvasTexture());
 
     let vertices = [-.5, .5, .5];
     let geometry = new THREE.BufferGeometry();
