@@ -12,6 +12,9 @@ import 'react-dat-gui/build/react-dat-gui.css';
 
 import * as dg from 'dis-gui';
 import mathUtils from "../../../utils/mathUtils";
+import label_vert from "./glsl/label_vert.glsl";
+import label_frag from "./glsl/label_frag.glsl";
+import {Vector4} from "three";
 
 
 const DEVELOPMENT = process.env.NODE_ENV === 'development';
@@ -43,10 +46,12 @@ class IcoSphere extends React.Component {
       mesh: null,
       vertices: [],
       hubs: [],
-      layerHubs: null,
       struts: [],
+      labels: [],
       strutTypes: [],
+      layerHubs: null,
       layerStruts: null,
+      layerLabels: null,
       edges: [],
       edgeLines: [],
       vertexNormals: null,
@@ -63,6 +68,7 @@ class IcoSphere extends React.Component {
       showHubs: false,
       showStruts: false,
       showLines: true,
+      showLabels: true,
       showNormals: false,
       showGrid: false,
       showAxis: false
@@ -75,9 +81,18 @@ class IcoSphere extends React.Component {
 
     this.initThree();
 
+    this.icoSphere.layerEdgeLines = new THREE.Object3D();
+    this.scene.add(this.icoSphere.layerEdgeLines);
 
-    this.addLayerEdgeLines();
-    this.addGeometryLayer();
+    this.icoSphere.layerHubs = new THREE.Object3D();
+    this.scene.add(this.icoSphere.layerHubs);
+
+    this.icoSphere.layerStruts = new THREE.Object3D();
+    this.scene.add(this.icoSphere.layerStruts);
+
+    this.icoSphere.layerLabels = new THREE.Object3D();
+    this.scene.add(this.icoSphere.layerLabels);
+
 
     this.initIcoSphere(types[PLATONIC_TYPE.ICOSAHEDRON], this.icoSphere.radius, this.icoSphere.level, this.ui.projectVert);
 
@@ -142,6 +157,10 @@ class IcoSphere extends React.Component {
       this.clearEdgeLines();
     }
 
+    if (this.icoSphere.labels.length > 0) {
+      this.clearLabels();
+    }
+
     if (this.icoSphere.hubs.length > 0 && this.icoSphere.struts.length > 0) {
       this.clearGeometryLayer();
     }
@@ -156,10 +175,6 @@ class IcoSphere extends React.Component {
 
   }
 
-  addLayerEdgeLines() {
-    this.icoSphere.layerEdgeLines = new THREE.Object3D();
-    this.scene.add(this.icoSphere.layerEdgeLines);
-  }
 
   creatIcoEdges(vertices, faces) {
     let edges = [];
@@ -220,6 +235,14 @@ class IcoSphere extends React.Component {
     this.icoSphere.edgeLines = [];
   }
 
+  clearLabels() {
+    for (let i = 0; i < this.icoSphere.labels.length; i++) {
+      this.icoSphere.labels[i].material.dispose();
+      this.icoSphere.layerLabels.remove(this.icoSphere.labels[i]);
+    }
+    this.icoSphere.labels = [];
+  }
+
   createEdgeLines() {
 
     const edges = this.icoSphere.edges;
@@ -248,7 +271,7 @@ class IcoSphere extends React.Component {
       const material = new THREE.LineBasicMaterial();
       edgeLengths.forEach((l, index) => {
         if (edge.length === l) {
-          material.color.set(edgeColors[index])
+          material.color.set(edgeColors[index]);
           edge['_colorIndex'] = index;
         }
       });
@@ -307,14 +330,6 @@ class IcoSphere extends React.Component {
     hub.position.set(vertex.x, vertex.y, vertex.z);
     this.icoSphere.hubs.push(hub);
     return hub;
-  }
-
-  addGeometryLayer() {
-    this.icoSphere.layerHubs = new THREE.Object3D();
-    this.scene.add(this.icoSphere.layerHubs);
-
-    this.icoSphere.layerStruts = new THREE.Object3D();
-    this.scene.add(this.icoSphere.layerStruts);
   }
 
   clearGeometryLayer() {
@@ -395,6 +410,66 @@ class IcoSphere extends React.Component {
     }
   }
 
+  getLabelTexture = (index) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const size = 256;
+    canvas.width = size;
+    canvas.height = size;
+
+    ctx.font = "128px Consolas";
+    ctx.textBaseline = "middle";
+    const txt = index.toString();
+    const lineWidth = 5;
+
+    ctx.beginPath();
+    ctx.arc(size * .5, size * .5, size * .5 - lineWidth, 0, 2 * Math.PI, false);
+    ctx.fillStyle = 'rgba(10,67,88,0.65)';
+    ctx.fill();
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = '#f1be2a';
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgb(233,231,224)';
+    ctx.fillText(txt, size * .5 - ctx.measureText(txt).width * .5, size * .525);
+
+    return canvas;
+
+  };
+
+  addHubLabel(vert) {
+    console.log(vert);
+    const index = vert['_index'];
+    const position = vert.clone();
+    const offsetPosition = position.clone().multiplyScalar(1.1);
+    const geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', new THREE.Float32BufferAttribute(offsetPosition.toArray(), 3));
+    const texture = new THREE.CanvasTexture(this.getLabelTexture(index));
+    let pointShader = new THREE.ShaderMaterial({
+      uniforms: {
+        texture: {type: 't', value: texture},
+        origin: {type: 'v4', value: position}
+      },
+      vertexShader: label_vert,
+      fragmentShader: label_frag,
+      depthTest: true,
+      transparent: true,
+    });
+
+    const lineMaterial = new THREE.LineBasicMaterial();
+    lineMaterial.color.set('#a0f2ff');
+    const lineGeometry = new THREE.Geometry();
+    lineGeometry.vertices.push(position, offsetPosition);
+    const labelLine = new THREE.Line(lineGeometry, lineMaterial);
+    let label = new THREE.Points(geometry, pointShader);
+
+    this.icoSphere.labels.push(label);
+    this.icoSphere.labels.push(labelLine);
+    this.icoSphere.layerLabels.add(label);
+    this.icoSphere.layerLabels.add(labelLine);
+  }
+
   getMetrics(vertices, faces) {
 
     const _vertices = [];
@@ -414,18 +489,24 @@ class IcoSphere extends React.Component {
       const vert = vertices[i];
       vert['_usedEdges'] = [];
       if (!vert['_delete']) {
-
         vert['_edges'].forEach((edge) => {
           this.icoSphere.strutTypes.forEach((strut) => {
             if (edge.length === strut.length) edge['_type'] = strut.type
           });
           if (!edge['_delete']) vert['_usedEdges'].push(edge)
         });
-
         _vertices.push(vert);
         this.icoSphere.layerHubs.add(this.addHub(vert));
       }
     }
+
+
+    // ADD LABELS
+    for (let i = 0; i < _vertices.length; i++) {
+      const vert = _vertices[i];
+      this.addHubLabel(vert);
+    }
+
 
     this.icoSphere.edges.forEach(edge => {
       if (!edge['_delete']) _edges.push(edge)
@@ -551,7 +632,7 @@ class IcoSphere extends React.Component {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
-  }
+  };
 
   draw = () => {
     requestAnimationFrame(this.draw);
@@ -599,6 +680,13 @@ class IcoSphere extends React.Component {
     this.ui.showLines = visible;
     if (this.icoSphere.layerEdgeLines) {
       this.icoSphere.layerEdgeLines.visible = this.ui.showLines;
+    }
+  };
+
+  viewLabels = (visible) => {
+    this.ui.showLabels = visible;
+    if (this.icoSphere.layerLabels) {
+      this.icoSphere.layerLabels.visible = this.ui.showLabels;
     }
   };
 
@@ -659,6 +747,7 @@ class IcoSphere extends React.Component {
           <dg.Checkbox label='projectVert' checked={this.ui.projectVert} onFinishChange={this.toggleProjection}/>
           <dg.Checkbox label='showMesh' checked={this.ui.showMesh} onFinishChange={this.viewMesh}/>
           <dg.Checkbox label='showLines' checked={this.ui.showLines} onFinishChange={this.viewLines}/>
+          <dg.Checkbox label='showLabels' checked={this.ui.showLabels} onFinishChange={this.viewLabels}/>
           <dg.Checkbox label='showNormals' checked={this.ui.showNormals} onFinishChange={this.viewNormals}/>
           <dg.Checkbox label='showHubs' checked={this.ui.showHubs} onFinishChange={this.viewHubs}/>
           <dg.Checkbox label='showStruts' checked={this.ui.showStruts} onFinishChange={this.viewStruts}/>

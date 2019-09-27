@@ -44,6 +44,7 @@
     "regression": "^2.0.1",
     "reselect": "4.0.0",
     "three": "^0.105.2",
+    "three.meshline": "^1.2.0",
     "write-json-file": "^4.1.0"
   },
   "devDependencies": {
