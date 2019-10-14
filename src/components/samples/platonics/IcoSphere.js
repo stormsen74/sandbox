@@ -14,7 +14,6 @@ import * as dg from 'dis-gui';
 import mathUtils from "../../../utils/mathUtils";
 import label_vert from "./glsl/label_vert.glsl";
 import label_frag from "./glsl/label_frag.glsl";
-import {Vector4} from "three";
 
 
 const DEVELOPMENT = process.env.NODE_ENV === 'development';
@@ -42,7 +41,7 @@ class IcoSphere extends React.Component {
     this.icoSphere = {
       type: PLATONIC_TYPE.ICOSAHEDRON,
       radius: 1,
-      level: 2,
+      level: 1,
       mesh: null,
       vertices: [],
       hubs: [],
@@ -52,6 +51,7 @@ class IcoSphere extends React.Component {
       layerHubs: null,
       layerStruts: null,
       layerLabels: null,
+      layerDebug: null,
       edges: [],
       edgeLines: [],
       vertexNormals: null,
@@ -93,8 +93,16 @@ class IcoSphere extends React.Component {
     this.icoSphere.layerLabels = new THREE.Object3D();
     this.scene.add(this.icoSphere.layerLabels);
 
+    this.icoSphere.layerDebug = new THREE.Object3D();
+    this.scene.add(this.icoSphere.layerDebug);
 
     this.initIcoSphere(types[PLATONIC_TYPE.ICOSAHEDRON], this.icoSphere.radius, this.icoSphere.level, this.ui.projectVert);
+
+
+    // ui
+    this.initControls();
+    this.showGrid(this.ui.showGrid);
+    this.showAxis(this.ui.showAxis);
 
     window.addEventListener('resize', this.onResize, true);
     this.onResize();
@@ -128,12 +136,6 @@ class IcoSphere extends React.Component {
     this.scene.add(lightTarget);
     this.scene.add(mainLight);
     this.scene.add(ambientLight);
-
-    // ui
-    this.initControls();
-    this.showGrid(this.ui.showGrid);
-    this.showAxis(this.ui.showAxis)
-
   }
 
 
@@ -258,7 +260,7 @@ class IcoSphere extends React.Component {
       return a - b
     };
     edgeLengths.sort(compareNumbers);
-    // console.log('create-edge-lines >', edgeLengths);
+    console.log('create-edge-lines >', edgeLengths);
 
     this.icoSphere.strutTypes = [];
     const types = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
@@ -361,6 +363,7 @@ class IcoSphere extends React.Component {
     }
   }
 
+
   setIcoVerts(vertices) {
     // => ico-sphere vertices / slicing
     for (let v = 0; v < vertices.length; v++) {
@@ -438,8 +441,9 @@ class IcoSphere extends React.Component {
 
   };
 
+
   addHubLabel(vert) {
-    console.log(vert);
+    // console.log(vert);
     const index = vert['_index'];
     const position = vert.clone();
     const offsetPosition = position.clone().multiplyScalar(1.1);
@@ -449,7 +453,6 @@ class IcoSphere extends React.Component {
     let pointShader = new THREE.ShaderMaterial({
       uniforms: {
         texture: {type: 't', value: texture},
-        origin: {type: 'v4', value: position}
       },
       vertexShader: label_vert,
       fragmentShader: label_frag,
@@ -468,6 +471,16 @@ class IcoSphere extends React.Component {
     this.icoSphere.labels.push(labelLine);
     this.icoSphere.layerLabels.add(label);
     this.icoSphere.layerLabels.add(labelLine);
+  }
+
+  drawDebugLine(vStart, vEnd, color) {
+    const lineMaterial = new THREE.LineBasicMaterial();
+    const lineColor = color || '#000000'
+    lineMaterial.color.set(lineColor);
+    const lineGeometry = new THREE.Geometry();
+    lineGeometry.vertices.push(vStart, vEnd);
+    const debugLine = new THREE.Line(lineGeometry, lineMaterial);
+    this.icoSphere.layerDebug.add(debugLine)
   }
 
   getMetrics(vertices, faces) {
@@ -500,12 +513,45 @@ class IcoSphere extends React.Component {
       }
     }
 
+    // ADD FACES TO VERtEX
+    const addFacesToVert = (vert) => {
+      const index = vert['_index'];
+
+      for (let j = 0; j < faces.length; j++) {
+        const face = faces[j];
+        if (index === face.a || index === face.b || index === face.c) {
+          vert['_faces'].push(face)
+        }
+      }
+    };
+
+    const drawDebugEdge = (vert, edge) => {
+      console.log('drawDebugEdge', vert, edge);
+      const v0 = edge.start._index === edge._index ? edge.start : edge.end;
+      const v1 = edge.start._index !== edge._index ? edge.start : edge.end;
+      const vNormal = vert.clone().normalize();
+      const dir = v0.clone().sub(v1.clone());
+      const axis = vNormal.clone();
+      dir.applyAxisAngle(axis, 0)
+      this.drawDebugLine(edge.start, edge.end, '#1ddbff');
+      this.drawDebugLine(v0, dir, '#ff791d');
+      this.drawDebugLine(vNormal, vNormal.clone().multiplyScalar(1.1), '#ff250e');
+    };
+
 
     // ADD LABELS
     for (let i = 0; i < _vertices.length; i++) {
       const vert = _vertices[i];
       this.addHubLabel(vert);
+      if (vert._index === 11) drawDebugEdge(vert, vert._edges[0])
+
+      addFacesToVert(vert);
     }
+
+    const t1 = (0.34862 * 0.34862) + (0.34862 * 0.34862) - (0.40355 * 0.40355);
+    const t2 = 2 * 0.34862 * 0.34862;
+    const a = Math.acos(t1 / t2) * 57.2958;
+    console.log(a);
 
 
     this.icoSphere.edges.forEach(edge => {
@@ -514,7 +560,7 @@ class IcoSphere extends React.Component {
 
     const getStrutAngle = (edge) => {
       let indices = edge._indices.split(',');
-      const vertex = vertices[~~indices[0]]
+      const vertex = vertices[~~indices[0]];
       const end = edge.end.clone();
       const start = edge.start.clone();
       const edgeDirection = end.sub(start).normalize();
@@ -535,9 +581,10 @@ class IcoSphere extends React.Component {
 
     // Todo - getHubAngles _\|/_ / getHubTypes / radius - scaling /
     // https://simplydifferently.org/Geodesic_Dome_Notes?page=3#2V%20Icosahedron%20Dome
+    // https://simplydifferently.org/Geodesic_Dome_Notes?page=2#Overview%20of%20Variants
     // http://www.neolithicsphere.com/geodesica/doc/isolate_vertex.html
 
-    // console.log('v >', _vertices);
+    console.log('v >', _vertices);
     // console.log('f >', _faces);
     // console.log('e >', _edges);
 
@@ -569,6 +616,7 @@ class IcoSphere extends React.Component {
       this.setProjection(vertices, subdivision, radius, projectToSphere);
 
       this.setIcoVerts(vertices);
+
 
       this.creatIcoEdges(vertices, faces);
 
@@ -621,7 +669,7 @@ class IcoSphere extends React.Component {
     this.controls.dampingFactor = 0.15;
     this.controls.minDistance = 4;
     this.controls.maxDistance = 7;
-    // this.controls.maxPolarAngle = Math.PI / 2;
+    this.controls.maxPolarAngle = Math.PI / 2;
   }
 
   update() {
