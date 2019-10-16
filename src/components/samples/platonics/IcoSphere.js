@@ -17,6 +17,9 @@ import label_frag from "./glsl/label_frag.glsl";
 
 
 const DEVELOPMENT = process.env.NODE_ENV === 'development';
+const radToDeg = (angleRad) => {
+  return angleRad * 57.2958
+};
 const VR_BG_COLOR = 0x363636;
 
 
@@ -161,6 +164,14 @@ class IcoSphere extends React.Component {
 
     if (this.icoSphere.labels.length > 0) {
       this.clearLabels();
+    }
+
+    if (this.icoSphere.layerDebug.children.length > 0) {
+      for (let i = 0; i < this.icoSphere.layerDebug.children.length; i++) {
+        const child = this.icoSphere.layerDebug.children[i];
+        child.material.dispose();
+        this.icoSphere.layerDebug.remove(child);
+      }
     }
 
     if (this.icoSphere.hubs.length > 0 && this.icoSphere.struts.length > 0) {
@@ -525,33 +536,65 @@ class IcoSphere extends React.Component {
       }
     };
 
-    const drawDebugEdge = (vert, edge) => {
-      console.log('drawDebugEdge', vert, edge);
-      const v0 = edge.start._index === edge._index ? edge.start : edge.end;
-      const v1 = edge.start._index !== edge._index ? edge.start : edge.end;
+    const drawDebugEdge = (vert) => {
+      const edge0 = vert._usedEdges[0];
+      const edge1 = vert._usedEdges[1];
+      // console.log('=>', 'v:', vert, edge0, edge1);
+      const e0start = edge0.start._index === edge0._index ? edge0.start : edge0.end;
+      const e0end = edge0.start._index !== edge0._index ? edge0.start : edge0.end;
+      const e1start = edge1.start._index === edge1._index ? edge1.start : edge1.end;
+      const e1end = edge1.start._index !== edge1._index ? edge1.start : edge1.end;
       const vNormal = vert.clone().normalize();
-      const dir = v0.clone().sub(v1.clone());
-      const axis = vNormal.clone();
-      dir.applyAxisAngle(axis, 0)
-      this.drawDebugLine(edge.start, edge.end, '#1ddbff');
-      this.drawDebugLine(v0, dir, '#ff791d');
-      this.drawDebugLine(vNormal, vNormal.clone().multiplyScalar(1.1), '#ff250e');
+      const edge0Dir = e0end.clone().sub(e0start.clone()).normalize();
+      const edge1Dir = e1end.clone().sub(e1start.clone()).normalize();
+      // console.log(radToDeg(edge0Dir.angleTo(edge1Dir)));
+      // const edgeSpherical = new THREE.Spherical().setFromVector3(edgeDir);
+      // edgeSpherical.set(edgeSpherical.radius, Math.PI * .5, edgeSpherical.theta)
+      // const newEdgeDir = edgeDir.clone().setFromSpherical(edgeSpherical);
+      // const rad = edgeDir.angleTo(newEdgeDir);
+      // console.log(radToDeg(rad));
+      this.drawDebugLine(e0start, e0end, '#0f2bff');
+      this.drawDebugLine(e1start, e1end, '#1769ff');
+
+      // edge 0
+
+      const logEdge = (edge) => {
+        const radius = this.icoSphere.radius;
+        const edgeLength = edge.length;
+        const alpha = Math.asin(edgeLength / 2 / radius);
+        const beta = Math.PI / 2 - alpha;
+        const delta = Math.PI - 2 * beta;
+        const chordFactor = 2 * Math.sin(delta / 2);
+        console.log(
+          'edge-indices: ' + edge._indices + '\n' +
+          'edge-type: ' + edge._type + '\n' +
+          'edge-length: ' + edgeLength + '\n' +
+          'alpha: ' + radToDeg(alpha) + '\n' +
+          'chord-factor: ' + chordFactor + '\n'
+        )
+      };
+
+      logEdge(edge0);
+      logEdge(edge1);
+
+
+      // this.drawDebugLine(edgeEnd, newDir.clone().add(v0), '#ff791d');
     };
 
+    // const t1 = (0.34862 * 0.34862) + (0.34862 * 0.34862) - (0.40355 * 0.40355);
+    // const t2 = 2 * 0.34862 * 0.34862;
+    // const a = Math.acos(t1 / t2) * 57.2958;
+    // console.log(a);
 
     // ADD LABELS
     for (let i = 0; i < _vertices.length; i++) {
       const vert = _vertices[i];
       this.addHubLabel(vert);
-      if (vert._index === 11) drawDebugEdge(vert, vert._edges[0])
+
+      if (vert._index === 5) drawDebugEdge(vert)
 
       addFacesToVert(vert);
     }
-
-    const t1 = (0.34862 * 0.34862) + (0.34862 * 0.34862) - (0.40355 * 0.40355);
-    const t2 = 2 * 0.34862 * 0.34862;
-    const a = Math.acos(t1 / t2) * 57.2958;
-    console.log(a);
 
 
     this.icoSphere.edges.forEach(edge => {
@@ -584,7 +627,7 @@ class IcoSphere extends React.Component {
     // https://simplydifferently.org/Geodesic_Dome_Notes?page=2#Overview%20of%20Variants
     // http://www.neolithicsphere.com/geodesica/doc/isolate_vertex.html
 
-    console.log('v >', _vertices);
+    // console.log('v >', _vertices);
     // console.log('f >', _faces);
     // console.log('e >', _edges);
 
