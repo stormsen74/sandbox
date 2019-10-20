@@ -537,6 +537,7 @@ class IcoSphere extends React.Component {
     };
 
     const drawDebugEdge = (vert) => {
+      const center = new Vector3(0, 0, 0);
       const edge0 = vert._usedEdges[0];
       const edge1 = vert._usedEdges[1];
       // console.log('=>', 'v:', vert, edge0, edge1);
@@ -553,8 +554,31 @@ class IcoSphere extends React.Component {
       // const newEdgeDir = edgeDir.clone().setFromSpherical(edgeSpherical);
       // const rad = edgeDir.angleTo(newEdgeDir);
       // console.log(radToDeg(rad));
-      this.drawDebugLine(e0start, e0end, '#0f2bff');
-      this.drawDebugLine(e1start, e1end, '#1769ff');
+      this.drawDebugLine(center, vert.clone().multiplyScalar(1.25), '#3144ee');
+      // this.drawDebugLine(vert, e0end, '#3144ee');
+      // this.drawDebugLine(vert, e1end, '#57dc6a');
+
+      const plane = new THREE.Plane(vNormal, 0);
+      const projected_0 = new Vector3();
+      const projected_1 = new Vector3();
+      plane.projectPoint(e0end, projected_0);
+      plane.projectPoint(e1end, projected_1);
+      projected_0.add(e0end);
+      projected_1.add(e1end);
+      this.drawDebugLine(vert, projected_0, '#ca1ddc');
+      this.drawDebugLine(vert, projected_1, '#ca1ddc');
+      console.log('~', radToDeg(projected_0.angleTo(projected_1)));
+      console.log('~', radToDeg(Math.acos(projected_0.clone().normalize().dot(projected_1.clone().normalize()))));
+      // console.log('~', radToDeg(Math.acos(projected_0.clone().normalize().dot(vNormal))));
+
+      const vp0 = vert.distanceTo(projected_0);
+      const vp1 = vert.distanceTo(projected_1);
+      const p0p1 = projected_0.distanceTo(projected_1)
+
+      // https://simplydifferently.org/Geodesic_Dome_Notes?page=2#Overview%20of%20Variants
+      const ca = Math.acos((vp0 * vp0 + vp1 * vp1 - p0p1) / (2 * vp0 * vp1))
+      console.log(vp0, vp1, p0p1, radToDeg(ca))
+
 
       // edge 0
 
@@ -591,7 +615,7 @@ class IcoSphere extends React.Component {
       const vert = _vertices[i];
       this.addHubLabel(vert);
 
-      if (vert._index === 5) drawDebugEdge(vert)
+      if (vert._index === 26) drawDebugEdge(vert)
 
       addFacesToVert(vert);
     }
@@ -710,9 +734,9 @@ class IcoSphere extends React.Component {
     this.controls.enableDamping = true;
     this.controls.enablePan = false;
     this.controls.dampingFactor = 0.15;
-    this.controls.minDistance = 4;
+    this.controls.minDistance = 2;
     this.controls.maxDistance = 7;
-    this.controls.maxPolarAngle = Math.PI / 2;
+    // this.controls.maxPolarAngle = Math.PI / 2;
   }
 
   update() {
