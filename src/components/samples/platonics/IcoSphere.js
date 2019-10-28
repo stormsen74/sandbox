@@ -34,6 +34,13 @@ const edgeColors = [
   new THREE.Color("#c753dc")
 ];
 
+const faceMaterials = [
+  new THREE.MeshBasicMaterial({flatShading: true, visible: false, depthTest: true, color: "#ff0000", transparent: true, opacity: 0.01}),
+  new THREE.MeshPhongMaterial({flatShading: true, color: "#dddddd", side: THREE.DoubleSide, transparent: true, opacity: 0.9}),
+  new THREE.MeshPhongMaterial({flatShading: true, color: "#121ddd", side: THREE.DoubleSide, transparent: true, opacity: 0.7}),
+  new THREE.MeshPhongMaterial({flatShading: true, color: "#15dd46", side: THREE.DoubleSide, transparent: true, opacity: 0.9})
+];
+
 class IcoSphere extends React.Component {
   constructor(props) {
     super(props);
@@ -502,10 +509,7 @@ class IcoSphere extends React.Component {
     const position = vert.clone();
     const offsetPosition = position.clone().multiplyScalar(1.1);
     const geometry = new THREE.BufferGeometry();
-    geometry.addAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(offsetPosition.toArray(), 3)
-    );
+    geometry.addAttribute("position", new THREE.Float32BufferAttribute(offsetPosition.toArray(), 3));
     const texture = new THREE.CanvasTexture(this.getLabelTexture(index));
     let pointShader = new THREE.ShaderMaterial({
       uniforms: {
@@ -900,15 +904,8 @@ class IcoSphere extends React.Component {
       this.getMetrics(vertices, faces);
 
       // 2. => to buffer
-      const platonic_buffer_geometry = new THREE.BufferGeometry().fromGeometry(
-        platonic_geometry
-      );
-      const faceMaterials = [
-        new THREE.MeshBasicMaterial({flatShading: true, visible: false, depthTest: true, color: "#ff0000", transparent: true, opacity: 0.01}),
-        new THREE.MeshPhongMaterial({flatShading: true, color: "#dddddd", side: THREE.DoubleSide, transparent: true, opacity: 0.9}),
-        new THREE.MeshPhongMaterial({flatShading: true, color: "#121ddd", side: THREE.DoubleSide, transparent: true, opacity: 0.7}),
-        new THREE.MeshPhongMaterial({flatShading: true, color: "#15dd46", side: THREE.DoubleSide, transparent: true, opacity: 0.9})
-      ];
+      const platonic_buffer_geometry = new THREE.BufferGeometry().fromGeometry(platonic_geometry);
+
       this.icoSphere.mesh = new THREE.Mesh(platonic_buffer_geometry, faceMaterials);
       this.icoSphere.vertexNormals = new THREE.VertexNormalsHelper(this.icoSphere.mesh, 0.1, 0xff0000, 1);
 
@@ -1046,89 +1043,23 @@ class IcoSphere extends React.Component {
   render() {
     return (
       <div>
-        <div
-          style={{overflow: "hidden"}}
-          className={"canvas-wrapper"}
-          id={"canvas-wrapper"}
-          ref={ref => (this.canvasWrapper = ref)}
-        >
+        <div style={{overflow: "hidden"}} className={"canvas-wrapper"} id={"canvas-wrapper"} ref={ref => (this.canvasWrapper = ref)}>
           <canvas ref={ref => (this.canvas = ref)}/>
         </div>
         <dg.GUI>
-          <dg.Number
-            label="Radius"
-            value={this.icoSphere.radius}
-            min={1}
-            max={6}
-            step={0.1}
-            onChange={this.onChangeRadius}
-          />
-          <dg.Number
-            label="Subdivision"
-            value={this.icoSphere.level}
-            min={1}
-            max={6}
-            step={1}
-            onChange={this.onChangeLevel}
-          />
-          <dg.Number
-            label="Slice"
-            value={this.ui.slice}
-            min={0}
-            max={1}
-            step={0.01}
-            onChange={this.onUpdateSlice}
-          />
-          <dg.Checkbox
-            label="Offset-Vertices"
-            checked={this.ui.offsetVertices}
-            onFinishChange={this.toggleOffsetVertices}
-          />
-          <dg.Checkbox
-            label="projectVert"
-            checked={this.ui.projectVert}
-            onFinishChange={this.toggleProjection}
-          />
-          <dg.Checkbox
-            label="showMesh"
-            checked={this.ui.showMesh}
-            onFinishChange={this.viewMesh}
-          />
-          <dg.Checkbox
-            label="showLines"
-            checked={this.ui.showLines}
-            onFinishChange={this.viewLines}
-          />
-          <dg.Checkbox
-            label="showLabels"
-            checked={this.ui.showLabels}
-            onFinishChange={this.viewLabels}
-          />
-          <dg.Checkbox
-            label="showNormals"
-            checked={this.ui.showNormals}
-            onFinishChange={this.viewNormals}
-          />
-          <dg.Checkbox
-            label="showHubs"
-            checked={this.ui.showHubs}
-            onFinishChange={this.viewHubs}
-          />
-          <dg.Checkbox
-            label="showStruts"
-            checked={this.ui.showStruts}
-            onFinishChange={this.viewStruts}
-          />
-          <dg.Checkbox
-            label="showGrid"
-            checked={this.ui.showGrid}
-            onFinishChange={this.showGrid}
-          />
-          <dg.Checkbox
-            label="showAxis"
-            checked={this.ui.showAxis}
-            onFinishChange={this.showAxis}
-          />
+          <dg.Number label="Radius" value={this.icoSphere.radius} min={1} max={6} step={0.1} onChange={this.onChangeRadius}/>
+          <dg.Number label="Subdivision" value={this.icoSphere.level} min={1} max={6} step={1} onChange={this.onChangeLevel}/>
+          <dg.Number label="Slice" value={this.ui.slice} min={0} max={1} step={0.01} onChange={this.onUpdateSlice}/>
+          <dg.Checkbox label="Offset-Vertices" checked={this.ui.offsetVertices} onFinishChange={this.toggleOffsetVertices}/>
+          <dg.Checkbox label="projectVert" checked={this.ui.projectVert} onFinishChange={this.toggleProjection}/>
+          <dg.Checkbox label="showMesh" checked={this.ui.showMesh} onFinishChange={this.viewMesh}/>
+          <dg.Checkbox label="showLines" checked={this.ui.showLines} onFinishChange={this.viewLines}/>
+          <dg.Checkbox label="showLabels" checked={this.ui.showLabels} onFinishChange={this.viewLabels}/>
+          <dg.Checkbox label="showNormals" checked={this.ui.showNormals} onFinishChange={this.viewNormals}/>
+          <dg.Checkbox label="showHubs" checked={this.ui.showHubs} onFinishChange={this.viewHubs}/>
+          <dg.Checkbox label="showStruts" checked={this.ui.showStruts} onFinishChange={this.viewStruts}/>
+          <dg.Checkbox label="showGrid" checked={this.ui.showGrid} onFinishChange={this.showGrid}/>
+          <dg.Checkbox label="showAxis" checked={this.ui.showAxis} onFinishChange={this.showAxis}/>
         </dg.GUI>
         <a href={"/"}>
           <CloseIcon fill={"#ffffff"} className="close-icon"/>
