@@ -781,6 +781,10 @@ class IcoSphere extends React.Component {
       let c = [...new Set(a)];
       console.log(c);
 
+      const getCorrespondingEdge = (face) => {
+        // https://stackoverflow.com/questions/12433604/how-can-i-find-matching-values-in-two-arrays
+      };
+
       for (let i = 0; i < orderedFaces.length; i++) {
         // compute angles direct here ... (per face)
 
@@ -788,14 +792,15 @@ class IcoSphere extends React.Component {
         const faceIndices = [face.a, face.b, face.c];
         const edge0 = face.zeroOrder[0].toString() + ',' + face.zeroOrder[1].toString();
         const edge1 = face.zeroOrder[0].toString() + ',' + face.zeroOrder[2].toString();
-        console.log(edge0, edge1)
+        // get corresponding edge ()
+        // console.log(edge0, edge1)
 
-        // const nextFace = i < orderedFaces.length - 1 ? orderedFaces[i + 1] : null;
-        // if (nextFace) {
-        //   const nextEdge0 = nextFace.zeroOrder[0].toString() + ',' + nextFace.zeroOrder[1].toString();
-        //   const nextEdge1 = nextFace.zeroOrder[0].toString() + ',' + nextFace.zeroOrder[2].toString();
-        //   console.log(edge0, edge1, nextEdge0, nextEdge1)
-        // }
+        const nextFace = i < orderedFaces.length - 1 ? orderedFaces[i + 1] : null;
+        if (nextFace) {
+          const nextEdge0 = nextFace.zeroOrder[0].toString() + ',' + nextFace.zeroOrder[1].toString();
+          const nextEdge1 = nextFace.zeroOrder[0].toString() + ',' + nextFace.zeroOrder[2].toString();
+          console.log('current:', edge0, edge1, 'next:', nextEdge0, nextEdge1)
+        }
       }
 
       // console.log("ordered: ", orderedFaces);
