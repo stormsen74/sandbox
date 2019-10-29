@@ -732,26 +732,27 @@ class IcoSphere extends React.Component {
       // add zeroOrder / zero is at vertex 'for face angles
       vert._faces.forEach((face, index) => {
         face.zeroOrder = getZeroOrder(face, vert);
-        // face.materialIndex = 3;
+        face.materialIndex = 3;
       });
-
-      const compareNumbers = (a, b) => {
-        return a - b;
-      };
-
 
       const numFaces = vert._faces.length;
       let _vertFaces = [...vert._faces];
       _vertFaces.shift();
       const orderedFaces = [vert._faces[0]]; //
       let currentFace = orderedFaces[0];
+
+
       const isNextFace = face => {
         let commonVertices = 0;
         const currentIndices = [currentFace.a, currentFace.b, currentFace.c];
         const nextIndices = [face.a, face.b, face.c];
         let isNextFace = false;
         currentIndices.forEach(i => {
-          if (nextIndices.includes(i)) commonVertices++;
+          const nextEdge = [];
+          if (nextIndices.includes(i)) {
+            nextEdge.push(i);
+            commonVertices++;
+          }
           if (commonVertices >= 2) isNextFace = true;
         });
         return isNextFace;
@@ -773,26 +774,58 @@ class IcoSphere extends React.Component {
         orderFaces();
       }
 
-      let a = [1, 2, 2, 3];
-      let c = [...new Set(a)];
-      console.log(c);
+      const getNextEdge = (e0, e1, n0, n1, firstFace = false) => {
+        let nextEdge;
+        if (e0 === e1 || e0 === n0 || e0 === n1) {
+          nextEdge = e0;
+        } else if (e1 === e0 || e1 === n0 || e1 === n1) {
+          nextEdge = e1;
+        }
+        if (firstFace) nextEdge = nextEdge === e0 ? e1 : e0;
+        return nextEdge;
+      };
 
+      let compareNumbers = (a, b) => {
+        return a - b;
+      };
+
+      const getReferenzEdge = (orderedEdgeIndices) => {
+        let referenzEdge = undefined;
+        vert._usedEdges.forEach(edge => {
+          const edgeIndices = edge._indices.split(',').map(parseFloat).sort(compareNumbers);
+          if (orderedEdgeIndices[0] === edgeIndices[0] && orderedEdgeIndices[1] === edgeIndices[1]) referenzEdge = edge;
+        });
+        return referenzEdge;
+      };
+
+      const edgeOrder = [];
       for (let i = 0; i < orderedFaces.length; i++) {
         // compute angles direct here ... (per face)
 
         const face = orderedFaces[i];
-        const faceIndices = [face.a, face.b, face.c];
         const edge0 = face.zeroOrder[0].toString() + ',' + face.zeroOrder[1].toString();
         const edge1 = face.zeroOrder[0].toString() + ',' + face.zeroOrder[2].toString();
-        console.log(edge0, edge1)
-
-        // const nextFace = i < orderedFaces.length - 1 ? orderedFaces[i + 1] : null;
-        // if (nextFace) {
-        //   const nextEdge0 = nextFace.zeroOrder[0].toString() + ',' + nextFace.zeroOrder[1].toString();
-        //   const nextEdge1 = nextFace.zeroOrder[0].toString() + ',' + nextFace.zeroOrder[2].toString();
-        //   console.log(edge0, edge1, nextEdge0, nextEdge1)
-        // }
+        const nextFace = i < orderedFaces.length - 1 ? orderedFaces[i + 1] : null;
+        if (nextFace) {
+          const nextEdge0 = nextFace.zeroOrder[0].toString() + ',' + nextFace.zeroOrder[1].toString();
+          const nextEdge1 = nextFace.zeroOrder[0].toString() + ',' + nextFace.zeroOrder[2].toString();
+          if (i === 0) {
+            edgeOrder.push(getNextEdge(edge0, edge1, nextEdge0, nextEdge1, true));
+            edgeOrder.push(getNextEdge(edge0, edge1, nextEdge0, nextEdge1));
+          } else {
+            edgeOrder.push(getNextEdge(edge0, edge1, nextEdge0, nextEdge1));
+          }
+        }
       }
+
+      console.log('edgeOrder: ', edgeOrder);
+
+      // get real Referenz edge ...
+      const orderedEdgeIndices = edgeOrder[0].split(',').map(parseFloat).sort(compareNumbers);
+      console.log('referenzEdge: ', getReferenzEdge(orderedEdgeIndices));
+
+
+      // Todo get edgeReferenz by edge
 
       // console.log("ordered: ", orderedFaces);
 
@@ -814,7 +847,7 @@ class IcoSphere extends React.Component {
 
       addFacesToVert(vert);
       // if (vert._index === 33) drawDebugEdge(vert)
-      if (vert._index === 26) drawDebugFace(vert);
+      if (vert._index === 11) drawDebugFace(vert);
       // if (vert._index === 26) newAnglesAttempt(vert);
     }
 
