@@ -22,7 +22,7 @@
   "dependencies": {
     "axios": "^0.19.0",
     "bootstrap": "^4.3.1",
-    "date-and-time": "^0.7.0",
+    "date-and-time": "^0.14.2",
     "dis-gui": "^2.1.0",
     "file-saver": "^2.0.2",
     "glslify-loader": "^2.0.0",
