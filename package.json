@@ -26,7 +26,7 @@
     "dis-gui": "^2.1.0",
     "file-saver": "^2.0.2",
     "glslify-loader": "^2.0.0",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "mousetrap": "^1.6.3",
     "pixi.js": "^5.0.3",
     "prop-types": "15.7.2",
